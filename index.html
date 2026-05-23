@@ -357,9 +357,6 @@ tbody tr:hover{background:var(--surface2)}
 </div>
 
 <script type="module">
-// ══════════════════════════════════════════════
-// CONFIGURATION — Replace null with your Firebase config
-// ══════════════════════════════════════════════
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyCcoKlqzxsLGKDPWouwgWS6Wda8m6Uqa_E",
   authDomain: "fleet-management-ae551.firebaseapp.com",
@@ -371,16 +368,14 @@ const FIREBASE_CONFIG = {
   measurementId: "G-EWX6R21S7W"
 };
 
-// Super Admin password (you — the owner)
-const SUPER_ADMIN_PASS = 'superadmin123'; // CHANGE THIS!
+const SUPER_ADMIN_PASS = 'superadmin123'; // Change this!
 
-// ══════════════════════════════════════════════
+// ── STATE ──
 let records = {};
-let companies = JSON.parse(localStorage.getItem('lager_companies') || '{}');
-let currentFirma = null;   // active company code
+let companies = {};        // loaded from Firebase
+let currentFirma = null;
 let currentFirmaName = null;
-let dbRef = null;
-let firebaseActive = false;
+let DB = null;             // firebase db functions
 let sortCol = 'ts', sortDir = -1;
 let currentEditId = null;
 
@@ -390,11 +385,9 @@ function nowLocal(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `
 function todayLocal(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
 function fmtDT(v){ if(!v)return '—'; return new Date(v).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
 function fmtDate(v){ if(!v)return '—'; const[y,m,d]=v.split('-'); return `${d}.${m}.${y}`; }
-function getPass(){ return localStorage.getItem('lager_pass_'+currentFirma) || (companies[currentFirma]?.pass) || 'admin123'; }
-function setPass(p){ localStorage.setItem('lager_pass_'+currentFirma,p); }
 function getBaseUrl(){ return window.location.href.split('?')[0]; }
 function getDriverLink(code){ return `${getBaseUrl()}?firma=${code}`; }
-function getAdminLink(code,pass){ return `${getBaseUrl()}?firma=${code}&admin=1&pw=${encodeURIComponent(pass)}`; }
+function getAdminLink(code){ return `${getBaseUrl()}?firma=${code}&admin=1`; }
 
 function toast(msg,type='ok'){
   const c=document.getElementById('toast-container');
@@ -404,66 +397,83 @@ function toast(msg,type='ok'){
   c.appendChild(t); setTimeout(()=>t.remove(),3000);
 }
 
-// ── URL PARAMS ──
 function getParams(){
   const p=new URLSearchParams(window.location.search);
-  return { firma:p.get('firma'), pw:p.get('pw'), admin:p.get('admin'), superadmin:p.get('superadmin') };
+  return { firma:p.get('firma'), admin:p.get('admin'), superadmin:p.get('superadmin') };
 }
 
-// ── FIREBASE ──
+// ── FIREBASE INIT ──
 async function initFirebase(){
-  if(!FIREBASE_CONFIG) return;
-  try{
-    const{initializeApp}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
-    const{getDatabase,ref,onValue,push,set,remove,update}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
-    const app=initializeApp(FIREBASE_CONFIG);
-    const db=getDatabase(app);
-    dbRef={ref,push,set,remove,update,db};
-    firebaseActive=true;
-    // Also sync companies list from Firebase
-    const compRef=ref(db,'lager-companies');
-    onValue(compRef,snap=>{ if(snap.val()) companies={...companies,...snap.val()}; renderSAList(); });
-  }catch(e){ console.warn('Firebase:',e); }
+  const{initializeApp}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+  const{getDatabase,ref,onValue,push,set,remove,update,get}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+  const app=initializeApp(FIREBASE_CONFIG);
+  const db=getDatabase(app);
+  DB={ref,onValue,push,set,remove,update,get,db};
+  return DB;
 }
 
-async function subscribeToFirma(code){
-  if(!firebaseActive) return;
-  const{ref,onValue}=dbRef;
-  onValue(ref(dbRef.db,`firmen/${code}/eintraege`),snap=>{
+// ── COMPANY PASSWORD from Firebase ──
+async function getCompanyPass(code){
+  const snap=await DB.get(DB.ref(DB.db,`lager-companies/${code}/pass`));
+  return snap.val() || 'admin123';
+}
+
+async function setCompanyPass(code, newPass){
+  await DB.set(DB.ref(DB.db,`lager-companies/${code}/pass`), newPass);
+}
+
+// ── DATA OPS ──
+async function saveRecord(rec){
+  const r=DB.push(DB.ref(DB.db,`firmen/${currentFirma}/eintraege`));
+  await DB.set(r,rec);
+  return r.key;
+}
+async function updateRecord(id,data){
+  await DB.update(DB.ref(DB.db,`firmen/${currentFirma}/eintraege/${id}`),data);
+  renderTable(); updateStats();
+}
+async function deleteRecord(id){
+  await DB.remove(DB.ref(DB.db,`firmen/${currentFirma}/eintraege/${id}`));
+  renderTable(); updateStats();
+}
+
+function subscribeToFirma(code){
+  DB.onValue(DB.ref(DB.db,`firmen/${code}/eintraege`),snap=>{
     records=snap.val()||{};
     renderTable(); updateStats();
   });
 }
 
-async function saveRecord(rec){
-  if(firebaseActive){ const r=dbRef.push(dbRef.ref(dbRef.db,`firmen/${currentFirma}/eintraege`)); await dbRef.set(r,rec); return r.key; }
-  else{ const id=uid(); records[id]=rec; return id; }
-}
-async function updateRecord(id,data){
-  if(firebaseActive) await dbRef.update(dbRef.ref(dbRef.db,`firmen/${currentFirma}/eintraege/${id}`),data);
-  else records[id]={...records[id],...data};
-  renderTable(); updateStats();
-}
-async function deleteRecord(id){
-  if(firebaseActive) await dbRef.remove(dbRef.ref(dbRef.db,`firmen/${currentFirma}/eintraege/${id}`));
-  else delete records[id];
-  renderTable(); updateStats();
+function subscribeToCompanies(){
+  DB.onValue(DB.ref(DB.db,'lager-companies'),snap=>{
+    companies=snap.val()||{};
+    renderSAList();
+  });
 }
 
-// ── BOOT: parse URL and route ──
+// ── BOOT ──
 async function boot(){
-  await initFirebase();
+  try{
+    await initFirebase();
+  }catch(e){
+    toast('Firebase Verbindungsfehler!','err');
+    console.error(e); return;
+  }
+
   const p=getParams();
 
   if(p.superadmin==='1'){
+    subscribeToCompanies();
     showPage('superadmin'); return;
   }
 
   if(p.firma){
     currentFirma=p.firma;
-    currentFirmaName=companies[p.firma]?.name || p.firma;
+    // Load company name from Firebase
+    const snap=await DB.get(DB.ref(DB.db,`lager-companies/${p.firma}`));
+    const compData=snap.val();
+    currentFirmaName=compData?.name || p.firma;
 
-    // Update select page for this company
     document.getElementById('select-title').textContent=currentFirmaName;
     document.getElementById('select-sub').textContent='Lagerverwaltung — '+p.firma;
     document.getElementById('select-admin-tag').textContent='Firmen-Admin';
@@ -472,14 +482,16 @@ async function boot(){
     document.getElementById('login-title').textContent=currentFirmaName+' — Admin';
     document.getElementById('login-company-label').textContent='Bitte Admin-Passwort eingeben';
 
-    // Auto-login if pw in URL
-    if(p.admin==='1' && p.pw){
-      const storedPass=localStorage.getItem('lager_pass_'+currentFirma)||(companies[currentFirma]?.pass)||'admin123';
-      if(p.pw===storedPass){ enterAdmin(); return; }
+    // Auto-login if admin=1 (admin link clicked)
+    if(p.admin==='1'){
+      subscribeToFirma(currentFirma);
+      showPage('admin');
+      updateAdminUI();
+      return;
     }
     showPage('select');
   } else {
-    // No firma in URL — show super admin option on select
+    // No firma — show super admin button
     document.getElementById('select-choices').innerHTML+=`
       <div class="choice-card" onclick="goSuperAdmin()" style="grid-column:1/-1;opacity:.7">
         <div class="choice-icon" style="background:var(--blue-bg);border-color:#b5cef5"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
@@ -493,7 +505,7 @@ async function boot(){
 
 window.goSuperAdmin=function(){
   const pw=prompt('Super Admin Passwort:');
-  if(pw===SUPER_ADMIN_PASS){ showPage('superadmin'); }
+  if(pw===SUPER_ADMIN_PASS){ subscribeToCompanies(); showPage('superadmin'); }
   else if(pw!==null) toast('Falsches Passwort.','err');
 };
 
@@ -502,13 +514,15 @@ window.showPage=function(p){
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
   if(p==='driver'){ document.getElementById('d-timein').value=nowLocal(); document.getElementById('d-date').value=todayLocal(); document.getElementById('driver-success').style.display='none'; document.getElementById('driver-form-area').style.display='block'; }
-  if(p==='admin'){ document.getElementById('m-timein').value=nowLocal(); document.getElementById('m-date').value=todayLocal(); document.getElementById('admin-topbar-title').textContent=(currentFirmaName||'Admin')+' — Dashboard'; document.getElementById('admin-topbar-sub').textContent=Object.keys(records).length+' Einträge'; document.getElementById('info-company').textContent=currentFirmaName||'—'; document.getElementById('info-code').textContent=currentFirma||'—'; renderTable(); updateStats(); }
+  if(p==='admin'){ document.getElementById('m-timein').value=nowLocal(); document.getElementById('m-date').value=todayLocal(); updateAdminUI(); }
   if(p==='admin-login'){ document.getElementById('a-pass').value=''; document.getElementById('login-err').style.display='none'; }
 };
 
-function enterAdmin(){
-  if(currentFirma){ subscribeToFirma(currentFirma); }
-  showPage('admin');
+function updateAdminUI(){
+  document.getElementById('admin-topbar-title').textContent=(currentFirmaName||'Admin')+' — Dashboard';
+  document.getElementById('info-company').textContent=currentFirmaName||'—';
+  document.getElementById('info-code').textContent=currentFirma||'—';
+  renderTable(); updateStats();
 }
 
 // ── TABS ──
@@ -608,10 +622,9 @@ window.saveInlineEdit=async function(id){
 window.delRecord=async function(id){ if(!confirm('Eintrag wirklich löschen?')) return; await deleteRecord(id); toast('Eintrag gelöscht.'); };
 window.deleteAll=async function(){
   if(!confirm('ALLE Einträge löschen?')) return;
-  if(!confirm('Wirklich sicher? Kann nicht rückgängig gemacht werden!')) return;
-  if(firebaseActive) await dbRef.set(dbRef.ref(dbRef.db,`firmen/${currentFirma}/eintraege`),null);
-  else records={};
-  renderTable(); updateStats(); toast('Alle Einträge gelöscht.');
+  if(!confirm('Wirklich sicher?')) return;
+  await DB.set(DB.ref(DB.db,`firmen/${currentFirma}/eintraege`),null);
+  records={}; renderTable(); updateStats(); toast('Alle Einträge gelöscht.');
 };
 
 // ── DRIVER FORM ──
@@ -624,20 +637,29 @@ window.driverSubmit=async function(){
   const date=document.getElementById('d-date').value;
   const note=document.getElementById('d-note').value.trim();
   if(!name||!plate||!car||!timein||!date){ toast('Bitte alle Pflichtfelder (*) ausfüllen.','err'); return; }
-  await saveRecord({name,plate,car,timein,timeout,date,note,ts:Date.now()});
-  document.getElementById('driver-form-area').style.display='none';
-  document.getElementById('driver-success-msg').textContent=`${name} (${plate}) wurde erfolgreich erfasst.`;
-  document.getElementById('driver-success').style.display='block';
-  if(!firebaseActive) updateStats();
-  toast('Eintrag gespeichert!');
+  try{
+    await saveRecord({name,plate,car,timein,timeout,date,note,ts:Date.now()});
+    document.getElementById('driver-form-area').style.display='none';
+    document.getElementById('driver-success-msg').textContent=`${name} (${plate}) wurde erfolgreich erfasst.`;
+    document.getElementById('driver-success').style.display='block';
+    toast('Eintrag gespeichert!');
+  }catch(e){ toast('Fehler beim Speichern. Bitte erneut versuchen.','err'); console.error(e); }
 };
 window.clearDriverForm=function(){ ['d-name','d-plate','d-car','d-note'].forEach(id=>document.getElementById(id).value=''); document.getElementById('d-timein').value=nowLocal(); document.getElementById('d-timeout').value=''; document.getElementById('d-date').value=todayLocal(); };
 window.resetDriverForm=function(){ clearDriverForm(); document.getElementById('driver-success').style.display='none'; document.getElementById('driver-form-area').style.display='block'; };
 
 // ── ADMIN LOGIN ──
-window.adminLogin=function(){
-  if(document.getElementById('a-pass').value===getPass()){ document.getElementById('login-err').style.display='none'; enterAdmin(); }
-  else document.getElementById('login-err').style.display='block';
+window.adminLogin=async function(){
+  const entered=document.getElementById('a-pass').value;
+  const correct=await getCompanyPass(currentFirma);
+  if(entered===correct){
+    document.getElementById('login-err').style.display='none';
+    subscribeToFirma(currentFirma);
+    showPage('admin');
+    updateAdminUI();
+  } else {
+    document.getElementById('login-err').style.display='block';
+  }
 };
 window.adminLogout=function(){ showPage('select'); };
 
@@ -647,11 +669,11 @@ window.adminAdd=async function(){
   const timein=document.getElementById('m-timein').value,timeout=document.getElementById('m-timeout').value,date=document.getElementById('m-date').value,note=document.getElementById('m-note').value.trim();
   if(!name||!plate||!car||!timein||!date){ toast('Pflichtfelder ausfüllen.','err'); return; }
   await saveRecord({name,plate,car,timein,timeout,date,note,ts:Date.now()});
-  clearManualForm(); if(!firebaseActive){ renderTable(); updateStats(); } toast('Eintrag hinzugefügt!');
+  clearManualForm(); toast('Eintrag hinzugefügt!');
 };
 window.clearManualForm=function(){ ['m-name','m-plate','m-car','m-note'].forEach(id=>document.getElementById(id).value=''); document.getElementById('m-timein').value=nowLocal(); document.getElementById('m-timeout').value=''; document.getElementById('m-date').value=todayLocal(); };
 
-// ── PASSWORD ──
+// ── PASSWORD CHANGE (stored in Firebase) ──
 window.checkPwStrength=function(){
   const pw=document.getElementById('pw-new').value;
   const bar=document.getElementById('pw-strength-bar'),lbl=document.getElementById('pw-strength-label');
@@ -660,17 +682,17 @@ window.checkPwStrength=function(){
   const levels=[['0%','transparent',''],['25%','#e74c3c','Schwach'],['50%','#e67e22','Mittel'],['75%','#f1c40f','Gut'],['100%','#2d6a4f','Stark'],['100%','#2d6a4f','Sehr stark']];
   const[w,c,t]=levels[s]||levels[0]; bar.style.width=w; bar.style.background=c; lbl.textContent=t; lbl.style.color=c;
 };
-window.changePassword=function(){
-  const cur=document.getElementById('pw-current').value,nw=document.getElementById('pw-new').value,conf=document.getElementById('pw-confirm').value;
+window.changePassword=async function(){
+  const cur=document.getElementById('pw-current').value;
+  const nw=document.getElementById('pw-new').value;
+  const conf=document.getElementById('pw-confirm').value;
   const msg=document.getElementById('pw-msg');
   const show=(txt,ok)=>{ msg.style.display='block'; msg.textContent=txt; msg.style.background=ok?'var(--green-bg)':'var(--red-bg)'; msg.style.color=ok?'var(--green)':'var(--red)'; msg.style.border=`1px solid ${ok?'#b7dfc2':'#f5c6c6'}`; };
-  if(cur!==getPass()){ show('Aktuelles Passwort ist falsch.',false); return; }
+  const correct=await getCompanyPass(currentFirma);
+  if(cur!==correct){ show('Aktuelles Passwort ist falsch.',false); return; }
   if(nw.length<6){ show('Mindestens 6 Zeichen.',false); return; }
   if(nw!==conf){ show('Passwörter stimmen nicht überein.',false); return; }
-  setPass(nw);
-  // Also update in companies object and localStorage
-  if(companies[currentFirma]) companies[currentFirma].pass=nw;
-  localStorage.setItem('lager_companies',JSON.stringify(companies));
+  await setCompanyPass(currentFirma, nw);
   clearPwForm(); show('Passwort erfolgreich geändert!',true); toast('Passwort geändert!');
 };
 window.clearPwForm=function(){ ['pw-current','pw-new','pw-confirm'].forEach(id=>document.getElementById(id).value=''); document.getElementById('pw-strength-bar').style.width='0%'; document.getElementById('pw-strength-label').textContent=''; document.getElementById('pw-msg').style.display='none'; };
@@ -692,23 +714,24 @@ window.autoSlug=function(){
   document.getElementById('sa-code').value=slug;
 };
 
-window.addCompany=function(){
+window.addCompany=async function(){
   const name=document.getElementById('sa-name').value.trim();
   const code=document.getElementById('sa-code').value.trim().toLowerCase().replace(/\s+/g,'-');
   const pass=document.getElementById('sa-pass').value;
   if(!name||!code||!pass){ toast('Alle Felder ausfüllen.','err'); return; }
-  if(companies[code]){ toast('Firma-Code existiert bereits.','err'); return; }
-  companies[code]={name,pass,created:Date.now()};
-  localStorage.setItem('lager_companies',JSON.stringify(companies));
-  if(firebaseActive) dbRef.set(dbRef.ref(dbRef.db,`lager-companies/${code}`),{name,created:Date.now()});
+  // Check if already exists
+  const snap=await DB.get(DB.ref(DB.db,`lager-companies/${code}`));
+  if(snap.val()){ toast('Firma-Code existiert bereits.','err'); return; }
+  // Save company to Firebase with password
+  await DB.set(DB.ref(DB.db,`lager-companies/${code}`),{name,pass,created:Date.now()});
   document.getElementById('sa-name').value=''; document.getElementById('sa-code').value=''; document.getElementById('sa-pass').value='';
-  renderSAList(); toast(`Firma "${name}" erstellt!`);
+  toast(`Firma "${name}" erstellt!`);
 };
 
-window.deleteCompany=function(code){
-  if(!confirm(`Firma "${companies[code]?.name}" wirklich löschen?`)) return;
-  delete companies[code]; localStorage.setItem('lager_companies',JSON.stringify(companies));
-  renderSAList(); toast('Firma gelöscht.');
+window.deleteCompany=async function(code){
+  if(!confirm(`Firma wirklich löschen?`)) return;
+  await DB.remove(DB.ref(DB.db,`lager-companies/${code}`));
+  toast('Firma gelöscht.');
 };
 
 window.copyLink=function(link){ navigator.clipboard.writeText(link).then(()=>toast('Link kopiert!')).catch(()=>{ prompt('Link:',link); }); };
@@ -719,8 +742,7 @@ function renderSAList(){
   if(!entries.length){ list.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="width:32px;height:32px;opacity:.4;display:block;margin:0 auto 8px"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>Noch keine Firmen erstellt</div>'; return; }
   list.innerHTML=entries.map(([code,c])=>{
     const driverLink=getDriverLink(code);
-    const adminPass=localStorage.getItem('lager_pass_'+code)||c.pass;
-    const adminLink=getAdminLink(code,adminPass);
+    const adminLink=getAdminLink(code);
     return `<div class="company-row">
       <div class="company-avatar">${code.slice(0,3).toUpperCase()}</div>
       <div class="company-info">
@@ -729,17 +751,17 @@ function renderSAList(){
         <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
           <div>
             <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Fahrer-Link</div>
-            <span class="company-link" onclick="copyLink('${driverLink}')" title="${driverLink}">${driverLink}</span>
+            <span class="company-link" onclick="copyLink('${driverLink}')">${driverLink}</span>
           </div>
           <div>
             <div style="font-size:10px;color:var(--red);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Admin-Link (privat!)</div>
-            <span class="company-link" style="background:var(--red-bg);border-color:#f5c6c6;color:var(--red)" onclick="copyLink('${adminLink}')" title="Klicken zum Kopieren">Klicken zum Kopieren ↗</span>
+            <span class="company-link" style="background:var(--red-bg);border-color:#f5c6c6;color:var(--red)" onclick="copyLink('${adminLink}')">Klicken zum Kopieren ↗</span>
           </div>
         </div>
       </div>
       <div class="company-actions">
-        <button class="btn btn-sm" onclick="copyLink('${driverLink}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Fahrer</button>
-        <button class="btn btn-sm btn-blue" onclick="copyLink('${adminLink}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Admin</button>
+        <button class="btn btn-sm" onclick="copyLink('${driverLink}')">Fahrer</button>
+        <button class="btn btn-sm btn-blue" onclick="copyLink('${adminLink}')">Admin</button>
         <button class="btn btn-sm btn-danger" onclick="deleteCompany('${code}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
       </div>
     </div>`;
