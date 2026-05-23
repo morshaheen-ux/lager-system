@@ -387,7 +387,7 @@ function fmtDT(v){ if(!v)return '—'; return new Date(v).toLocaleString('de-DE'
 function fmtDate(v){ if(!v)return '—'; const[y,m,d]=v.split('-'); return `${d}.${m}.${y}`; }
 function getBaseUrl(){ return window.location.href.split('?')[0]; }
 function getDriverLink(code){ return `${getBaseUrl()}?firma=${code}`; }
-function getAdminLink(code){ return `${getBaseUrl()}?firma=${code}&admin=1`; }
+function getAdminLink(code){ return `${getBaseUrl()}?firma=${code}`; }
 
 function toast(msg,type='ok'){
   const c=document.getElementById('toast-container');
@@ -399,7 +399,7 @@ function toast(msg,type='ok'){
 
 function getParams(){
   const p=new URLSearchParams(window.location.search);
-  return { firma:p.get('firma'), admin:p.get('admin'), superadmin:p.get('superadmin') };
+  return { firma:p.get('firma'), superadmin:p.get('superadmin') };
 }
 
 // ── FIREBASE INIT ──
@@ -482,13 +482,6 @@ async function boot(){
     document.getElementById('login-title').textContent=currentFirmaName+' — Admin';
     document.getElementById('login-company-label').textContent='Bitte Admin-Passwort eingeben';
 
-    // Auto-login if admin=1 (admin link clicked)
-    if(p.admin==='1'){
-      subscribeToFirma(currentFirma);
-      showPage('admin');
-      updateAdminUI();
-      return;
-    }
     showPage('select');
   } else {
     // No firma — show super admin button
@@ -754,14 +747,14 @@ function renderSAList(){
             <span class="company-link" onclick="copyLink('${driverLink}')">${driverLink}</span>
           </div>
           <div>
-            <div style="font-size:10px;color:var(--red);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Admin-Link (privat!)</div>
-            <span class="company-link" style="background:var(--red-bg);border-color:#f5c6c6;color:var(--red)" onclick="copyLink('${adminLink}')">Klicken zum Kopieren ↗</span>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Passwort für Admin</div>
+            <span style="font-family:var(--mono);font-size:12px;background:var(--amber-bg);color:var(--amber);padding:3px 8px;border-radius:6px;border:1px solid #f5d888">${c.pass}</span>
           </div>
         </div>
       </div>
       <div class="company-actions">
         <button class="btn btn-sm" onclick="copyLink('${driverLink}')">Fahrer</button>
-        <button class="btn btn-sm btn-blue" onclick="copyLink('${adminLink}')">Admin</button>
+
         <button class="btn btn-sm btn-danger" onclick="deleteCompany('${code}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
       </div>
     </div>`;
