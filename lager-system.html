@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lagerverwaltung</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#f5f4f0;--surface:#fff;--surface2:#f0efe9;--border:#e2e0d8;--border2:#ccc9be;--text:#1a1917;--text2:#6b6860;--text3:#a09e98;--green:#2d6a4f;--green-bg:#d8f3dc;--red:#9b2226;--red-bg:#fde8e8;--amber:#7d4e00;--amber-bg:#fff3cd;--blue:#1a4a8a;--blue-bg:#e8f0fb;--radius:10px;--radius-lg:16px;--mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+.page{display:none;min-height:100vh}.page.active{display:flex;flex-direction:column}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 2rem;height:56px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+.topbar-logo{display:flex;align-items:center;gap:10px;flex:1}
+.logo-mark{width:32px;height:32px;background:var(--text);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.logo-mark svg{width:18px;height:18px}
+.topbar-title{font-size:14px;font-weight:600;letter-spacing:-.01em}
+.topbar-sub{font-size:12px;color:var(--text3)}
+.topbar-actions{display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface);color:var(--text);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:background .15s;white-space:nowrap}
+.btn:hover{background:var(--surface2)}.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--text);color:#fff;border-color:var(--text)}.btn-primary:hover{opacity:.85;background:var(--text)}
+.btn-danger{color:var(--red);border-color:#f5c6c6}.btn-danger:hover{background:var(--red-bg)}
+.btn-blue{background:var(--blue);color:#fff;border-color:var(--blue)}.btn-blue:hover{opacity:.85;background:var(--blue)}
+.btn-sm{height:30px;padding:0 10px;font-size:12px;border-radius:8px}
+.btn-icon{width:32px;padding:0;justify-content:center}
+.main{flex:1;padding:2rem;max-width:1100px;margin:0 auto;width:100%}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1rem}
+.card-header{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:1.25rem}
+.card-header svg{width:14px;height:14px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-grid.cols3{grid-template-columns:1fr 1fr 1fr}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg.full{grid-column:1/-1}
+.fg label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
+input,select{height:40px;padding:0 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);font-family:var(--sans);font-size:14px;transition:border-color .15s,box-shadow .15s;width:100%}
+input:focus,select:focus{outline:none;border-color:var(--text);box-shadow:0 0 0 3px rgba(26,25,23,.08)}
+input::placeholder{color:var(--text3)}
+.btn-row{display:flex;gap:8px;margin-top:1.25rem}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem}
+.stat-val{font-size:28px;font-weight:600;letter-spacing:-.02em}
+.stat-lbl{font-size:11px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
+.tbl-wrap{overflow-x:auto;border-radius:var(--radius-lg);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:750px}
+thead tr{background:var(--surface2)}
+th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--text2)}
+th.sorted{color:var(--text)}
+td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr{background:var(--surface);transition:background .1s}
+tbody tr:hover{background:var(--surface2)}
+.td-plate{font-family:var(--mono);font-size:12px;color:var(--text2);background:var(--surface2);padding:2px 8px;border-radius:6px;border:1px solid var(--border);white-space:nowrap;display:inline-block}
+.td-time{font-family:var(--mono);font-size:12px;color:var(--text2);white-space:nowrap}
+.td-actions{display:flex;gap:4px;justify-content:flex-end}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:3px 9px;border-radius:99px}
+.badge-in{background:var(--green-bg);color:var(--green)}
+.badge-out{background:var(--red-bg);color:var(--red)}
+.badge-pending{background:var(--amber-bg);color:var(--amber)}
+.tab-nav{display:flex;gap:2px;margin-bottom:1.5rem;background:var(--surface2);padding:4px;border-radius:var(--radius-lg);border:1px solid var(--border);width:fit-content}
+.tab-btn{height:32px;padding:0 16px;border-radius:10px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;transition:background .15s,color .15s}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.tab-btn svg{width:14px;height:14px}
+.filter-row{display:flex;gap:8px;margin-bottom:1rem}
+.filter-row input{flex:1}
+.filter-row select{width:150px}
+.edit-row-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.edit-row-grid .fg label{font-size:10px}
+.edit-row-grid input{height:34px;font-size:13px}
+.edit-row-actions{display:flex;gap:6px;margin-top:10px}
+.select-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:2rem}
+.login-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:2rem}
+.login-card{width:100%;max-width:400px}
+.choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.choice-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.75rem 1.25rem;text-align:center;cursor:pointer;transition:border-color .15s,transform .15s}
+.choice-card:hover{border-color:var(--text);transform:translateY(-2px)}
+.choice-icon{width:48px;height:48px;background:var(--surface2);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;border:1px solid var(--border)}
+.choice-icon svg{width:24px;height:24px}
+.choice-card h2{font-size:15px;font-weight:600;margin-bottom:4px}
+.choice-card p{font-size:12px;color:var(--text3)}
+.choice-tag{display:inline-block;margin-top:12px;font-size:11px;font-family:var(--mono);background:var(--surface2);color:var(--text3);padding:4px 10px;border-radius:99px;border:1px solid var(--border)}
+.success-card{background:var(--green-bg);border:1px solid #b7dfc2;border-radius:var(--radius-lg);padding:2rem;text-align:center;display:none}
+.success-card h2{font-size:16px;font-weight:600;color:var(--green)}
+.success-card p{font-size:13px;color:#2d6a4f99;margin-top:4px}
+.err-msg{font-size:12px;color:var(--red);margin-top:8px;display:none}
+.divider{display:flex;align-items:center;gap:10px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:1.5rem 0 1rem}
+.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.notice{border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1rem;font-size:13px;display:flex;gap:10px;align-items:flex-start}
+.notice svg{width:16px;height:16px;flex-shrink:0;margin-top:1px}
+.notice-amber{background:var(--amber-bg);border:1px solid #f5d888;color:var(--amber)}
+.notice-blue{background:var(--blue-bg);border:1px solid #b5cef5;color:var(--blue)}
+.notice-green{background:var(--green-bg);border:1px solid #b7dfc2;color:var(--green)}
+#toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:9999}
+.toast{background:var(--text);color:#fff;padding:10px 16px;border-radius:var(--radius);font-size:13px;font-weight:500;animation:slideIn .2s ease;display:flex;align-items:center;gap:8px}
+.toast.ok{background:var(--green)}.toast.err{background:var(--red)}
+@keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.empty{text-align:center;padding:3rem;color:var(--text3);font-size:14px}
+.pw-strength{height:4px;border-radius:2px;margin-top:6px;transition:width .3s,background .3s;width:0%}
+.settings-section{border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem}
+.settings-label{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:1rem;display:flex;align-items:center;gap:6px}
+
+/* ── SUPER ADMIN ── */
+.company-row{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:8px;display:flex;align-items:center;gap:14px}
+.company-avatar{width:40px;height:40px;background:var(--blue-bg);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:600;font-size:13px;color:var(--blue);border:1px solid #b5cef5;font-family:var(--mono)}
+.company-info{flex:1;min-width:0}
+.company-name{font-size:14px;font-weight:600}
+.company-code{font-family:var(--mono);font-size:12px;color:var(--text3);margin-top:2px}
+.company-link{font-family:var(--mono);font-size:11px;color:var(--blue);background:var(--blue-bg);padding:3px 8px;border-radius:6px;border:1px solid #b5cef5;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px;display:inline-block}
+.company-actions{display:flex;gap:6px;flex-shrink:0}
+
+@media(max-width:600px){.main{padding:1rem}.topbar{padding:0 1rem}.form-grid,.form-grid.cols3{grid-template-columns:1fr}.stats-grid{grid-template-columns:1fr 1fr}.choice-grid{grid-template-columns:1fr}.edit-row-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div id="toast-container"></div>
+
+<!-- ═══ SELECT PAGE ═══ -->
+<div id="page-select" class="page active">
+  <div class="select-wrap">
+    <div style="width:100%;max-width:500px">
+      <div style="text-align:center;margin-bottom:2rem">
+        <div style="width:64px;height:64px;background:var(--text);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </div>
+        <div style="font-size:22px;font-weight:600;letter-spacing:-.02em" id="select-title">Lagerverwaltung</div>
+        <div style="font-size:14px;color:var(--text3);margin-top:4px" id="select-sub">Ein- &amp; Ausfahrt System</div>
+      </div>
+      <div class="choice-grid" id="select-choices">
+        <div class="choice-card" onclick="showPage('driver')">
+          <div class="choice-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+          <h2>Fahrer-Portal</h2>
+          <p>Ein- und Ausfahrt erfassen</p>
+          <span class="choice-tag">Fahrer-Zugang</span>
+        </div>
+        <div class="choice-card" onclick="showPage('admin-login')">
+          <div class="choice-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+          <h2>Admin-Dashboard</h2>
+          <p>Alle Einträge verwalten</p>
+          <span class="choice-tag" id="select-admin-tag">Passwort erforderlich</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ DRIVER PAGE ═══ -->
+<div id="page-driver" class="page">
+  <div class="topbar">
+    <div class="topbar-logo">
+      <div class="logo-mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+      <div><div class="topbar-title">Fahrer-Portal</div><div class="topbar-sub" id="driver-company-label">Einfahrt erfassen</div></div>
+    </div>
+    <button class="btn btn-sm" onclick="showPage('select')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Zurück</button>
+  </div>
+  <div class="main" style="max-width:620px">
+    <div id="driver-success" class="success-card">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green);margin-bottom:12px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <h2>Eintrag gespeichert!</h2>
+      <p id="driver-success-msg">Die Einfahrt wurde erfasst.</p>
+      <button class="btn btn-primary" style="margin:1rem auto 0;display:inline-flex" onclick="resetDriverForm()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Neuer Eintrag</button>
+    </div>
+    <div id="driver-form-area">
+      <div class="card">
+        <div class="card-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Fahrerinformationen</div>
+        <div class="form-grid">
+          <div class="fg full"><label>Fahrername *</label><input type="text" id="d-name" placeholder="Vor- und Nachname"/></div>
+          <div class="fg"><label>Kennzeichen *</label><input type="text" id="d-plate" placeholder="z. B. B-AB 1234" style="font-family:var(--mono)"/></div>
+          <div class="fg"><label>Fahrzeug / Marke *</label><input type="text" id="d-car" placeholder="z. B. VW Transporter"/></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Zeiten &amp; Datum</div>
+        <div class="form-grid cols3">
+          <div class="fg"><label>Einfahrt ins Lager *</label><input type="datetime-local" id="d-timein"/></div>
+          <div class="fg"><label>Ausfahrt aus Lager</label><input type="datetime-local" id="d-timeout"/></div>
+          <div class="fg"><label>Datum *</label><input type="date" id="d-date"/></div>
+          <div class="fg full"><label>Bemerkung (optional)</label><input type="text" id="d-note" placeholder="z. B. Lieferung Nr. 42"/></div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="driverSubmit()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Einfahrt speichern</button>
+        <button class="btn" onclick="clearDriverForm()">Zurücksetzen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ADMIN LOGIN ═══ -->
+<div id="page-admin-login" class="page">
+  <div class="topbar">
+    <div class="topbar-logo">
+      <div class="logo-mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+      <div><div class="topbar-title">Admin-Bereich</div><div class="topbar-sub" id="admin-login-sub">Anmeldung</div></div>
+    </div>
+    <button class="btn btn-sm" onclick="showPage('select')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Zurück</button>
+  </div>
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="card">
+        <div style="font-size:18px;font-weight:600;margin-bottom:4px" id="login-title">Admin-Anmeldung</div>
+        <div style="font-size:13px;color:var(--text3);margin-bottom:1.5rem" id="login-company-label">Bitte Passwort eingeben</div>
+        <div class="fg" style="margin-bottom:16px"><label>Passwort</label><input type="password" id="a-pass" placeholder="Passwort eingeben" onkeydown="if(event.key==='Enter')adminLogin()"/></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="adminLogin()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Anmelden</button>
+        <div id="login-err" class="err-msg">Falsches Passwort.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ADMIN DASHBOARD ═══ -->
+<div id="page-admin" class="page">
+  <div class="topbar">
+    <div class="topbar-logo">
+      <div class="logo-mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
+      <div><div class="topbar-title" id="admin-topbar-title">Admin-Dashboard</div><div class="topbar-sub" id="admin-topbar-sub">Lagerverwaltung</div></div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-sm" onclick="exportCSV()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</button>
+      <button class="btn btn-sm" onclick="adminLogout()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Abmelden</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="stats-grid" id="admin-stats"></div>
+    <div class="tab-nav">
+      <button class="tab-btn active" id="tab-table" onclick="switchTab('table')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg> Tabelle</button>
+      <button class="tab-btn" id="tab-add" onclick="switchTab('add')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Hinzufügen</button>
+      <button class="tab-btn" id="tab-settings" onclick="switchTab('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Einstellungen</button>
+    </div>
+    <!-- TABLE TAB -->
+    <div id="tab-content-table">
+      <div class="filter-row">
+        <input type="text" id="filter-q" placeholder="Suche: Name, Kennzeichen, Fahrzeug …" oninput="renderTable()"/>
+        <select id="filter-status" onchange="renderTable()"><option value="">Alle Status</option><option value="in">Im Lager</option><option value="out">Ausgefahren</option></select>
+        <select id="filter-date" onchange="renderTable()"><option value="">Alle Tage</option><option value="today">Nur heute</option></select>
+      </div>
+      <div class="tbl-wrap" id="tbl-wrap">
+        <table><thead><tr>
+          <th onclick="sortBy('name')">Fahrer <span id="arrow-name">↕</span></th>
+          <th onclick="sortBy('plate')">Kennzeichen <span id="arrow-plate">↕</span></th>
+          <th onclick="sortBy('car')">Fahrzeug <span id="arrow-car">↕</span></th>
+          <th onclick="sortBy('timein')">Einfahrt <span id="arrow-timein">↕</span></th>
+          <th onclick="sortBy('timeout')">Ausfahrt <span id="arrow-timeout">↕</span></th>
+          <th onclick="sortBy('date')">Datum <span id="arrow-date">↕</span></th>
+          <th>Status</th>
+          <th style="text-align:right">Aktionen</th>
+        </tr></thead><tbody id="admin-tbody"></tbody></table>
+      </div>
+      <div id="table-empty" class="empty" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="width:32px;height:32px;opacity:.4;display:block;margin:0 auto 8px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Keine Einträge gefunden</div>
+    </div>
+    <!-- ADD TAB -->
+    <div id="tab-content-add" style="display:none">
+      <div class="card">
+        <div class="card-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Neuen Eintrag manuell erfassen</div>
+        <div class="form-grid cols3">
+          <div class="fg"><label>Fahrername *</label><input type="text" id="m-name" placeholder="Name"/></div>
+          <div class="fg"><label>Kennzeichen *</label><input type="text" id="m-plate" placeholder="B-AB 1234" style="font-family:var(--mono)"/></div>
+          <div class="fg"><label>Fahrzeug *</label><input type="text" id="m-car" placeholder="Marke / Typ"/></div>
+          <div class="fg"><label>Einfahrt *</label><input type="datetime-local" id="m-timein"/></div>
+          <div class="fg"><label>Ausfahrt</label><input type="datetime-local" id="m-timeout"/></div>
+          <div class="fg"><label>Datum *</label><input type="date" id="m-date"/></div>
+          <div class="fg full"><label>Bemerkung</label><input type="text" id="m-note" placeholder="Optional"/></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="adminAdd()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Hinzufügen</button>
+          <button class="btn" onclick="clearManualForm()">Leeren</button>
+        </div>
+      </div>
+    </div>
+    <!-- SETTINGS TAB -->
+    <div id="tab-content-settings" style="display:none">
+      <div class="settings-section">
+        <div class="settings-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Passwort ändern</div>
+        <div class="form-grid" style="max-width:500px">
+          <div class="fg full"><label>Aktuelles Passwort</label><input type="password" id="pw-current" placeholder="Aktuelles Passwort"/></div>
+          <div class="fg"><label>Neues Passwort</label><input type="password" id="pw-new" placeholder="Neues Passwort" oninput="checkPwStrength()"/><div class="pw-strength" id="pw-strength-bar"></div><div style="font-size:11px;color:var(--text3);margin-top:3px" id="pw-strength-label"></div></div>
+          <div class="fg"><label>Passwort bestätigen</label><input type="password" id="pw-confirm" placeholder="Wiederholen"/></div>
+        </div>
+        <div class="btn-row"><button class="btn btn-primary" onclick="changePassword()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Speichern</button><button class="btn" onclick="clearPwForm()">Abbrechen</button></div>
+        <div id="pw-msg" style="display:none;margin-top:10px;font-size:13px;padding:8px 12px;border-radius:8px"></div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Informationen</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:500px;font-size:13px;color:var(--text2)">
+          <div><span style="color:var(--text3);font-size:11px;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em">Firma</span><span id="info-company">—</span></div>
+          <div><span style="color:var(--text3);font-size:11px;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em">Firma-Code</span><span id="info-code" style="font-family:var(--mono)">—</span></div>
+          <div><span style="color:var(--text3);font-size:11px;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em">Einträge gesamt</span><span id="info-count">0</span></div>
+          <div><span style="color:var(--text3);font-size:11px;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em">Fahrer-Link</span><span id="info-driver-link" style="font-family:var(--mono);font-size:11px;color:var(--blue);cursor:pointer" onclick="copyDriverLink()">Kopieren ↗</span></div>
+        </div>
+      </div>
+      <div class="settings-section" style="border-color:#f5c6c6">
+        <div class="settings-label" style="color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Gefahrenzone</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:1rem">Alle Einträge dieser Firma unwiderruflich löschen.</p>
+        <button class="btn btn-danger" onclick="deleteAll()">Alle Einträge löschen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SUPER ADMIN PAGE ═══ -->
+<div id="page-superadmin" class="page">
+  <div class="topbar">
+    <div class="topbar-logo">
+      <div class="logo-mark" style="background:var(--blue)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div><div class="topbar-title">Super Admin</div><div class="topbar-sub">Alle Firmen verwalten</div></div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-sm" onclick="showPage('select')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Zurück</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="notice notice-blue" style="margin-bottom:1.5rem">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <div>Du bist als <strong>Super Admin</strong> angemeldet. Hier kannst du Firmen erstellen und deren Links verwalten. Jede Firma sieht nur ihre eigenen Daten.</div>
+    </div>
+
+    <div class="divider">Neue Firma hinzufügen</div>
+    <div class="card">
+      <div class="form-grid cols3">
+        <div class="fg"><label>Firmenname *</label><input type="text" id="sa-name" placeholder="z. B. BMW Logistik GmbH"/></div>
+        <div class="fg"><label>Firma-Code * <span style="font-weight:400;color:var(--text3)">(URL-freundlich)</span></label><input type="text" id="sa-code" placeholder="z. B. bmw-logistik" style="font-family:var(--mono)" oninput="autoSlug()"/></div>
+        <div class="fg"><label>Admin-Passwort *</label><input type="password" id="sa-pass" placeholder="Passwort für diese Firma"/></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-blue" onclick="addCompany()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Firma erstellen</button>
+      </div>
+    </div>
+
+    <div class="divider">Firmen & Links</div>
+    <div id="sa-companies-list">
+      <div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="width:32px;height:32px;opacity:.4;display:block;margin:0 auto 8px"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>Noch keine Firmen erstellt</div>
+    </div>
+
+    <div class="divider">Firebase einrichten (für echte Daten)</div>
+    <div class="card" style="border-style:dashed">
+      <div class="card-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Schritt-für-Schritt Setup</div>
+      <ol style="font-size:13px;color:var(--text2);line-height:2;padding-left:1.25rem">
+        <li>Gehe zu <strong>console.firebase.google.com</strong> → kostenloses Konto erstellen</li>
+        <li>Neues Projekt erstellen (z. B. "mein-lagersystem")</li>
+        <li>Im Menü: <strong>Realtime Database</strong> → Datenbank erstellen → Testmodus wählen</li>
+        <li>Oben rechts: Zahnrad → Projekteinstellungen → Reiter "Allgemein"</li>
+        <li>Scrollen zu "Deine Apps" → Web-App hinzufügen (<code style="font-family:var(--mono);background:var(--surface2);padding:1px 5px;border-radius:4px">&lt;/&gt;</code>) → Config kopieren</li>
+        <li>Diese HTML-Datei in einem Texteditor öffnen → <code style="font-family:var(--mono);background:var(--surface2);padding:1px 5px;border-radius:4px">FIREBASE_CONFIG = null</code> mit deiner Config ersetzen</li>
+        <li>Datei auf <strong>GitHub Pages</strong> hochladen → kostenlose URL für alle Firmen</li>
+      </ol>
+      <div style="margin-top:12px;background:var(--surface2);border-radius:8px;padding:12px;font-family:var(--mono);font-size:12px;color:var(--text2);line-height:1.8">
+        const FIREBASE_CONFIG = {<br>
+        &nbsp;&nbsp;apiKey: "AIzaSy...",<br>
+        &nbsp;&nbsp;authDomain: "mein-lager.firebaseapp.com",<br>
+        &nbsp;&nbsp;databaseURL: "https://mein-lager-default-rtdb.firebaseio.com",<br>
+        &nbsp;&nbsp;projectId: "mein-lager"<br>
+        };
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+// ══════════════════════════════════════════════
+// CONFIGURATION — Replace null with your Firebase config
+// ══════════════════════════════════════════════
+const FIREBASE_CONFIG = null;
+
+// Super Admin password (you — the owner)
+const SUPER_ADMIN_PASS = 'superadmin123'; // CHANGE THIS!
+
+// ══════════════════════════════════════════════
+let records = {};
+let companies = JSON.parse(localStorage.getItem('lager_companies') || '{}');
+let currentFirma = null;   // active company code
+let currentFirmaName = null;
+let dbRef = null;
+let firebaseActive = false;
+let sortCol = 'ts', sortDir = -1;
+let currentEditId = null;
+
+// ── HELPERS ──
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function nowLocal(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; }
+function todayLocal(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
+function fmtDT(v){ if(!v)return '—'; return new Date(v).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function fmtDate(v){ if(!v)return '—'; const[y,m,d]=v.split('-'); return `${d}.${m}.${y}`; }
+function getPass(){ return localStorage.getItem('lager_pass_'+currentFirma) || (companies[currentFirma]?.pass) || 'admin123'; }
+function setPass(p){ localStorage.setItem('lager_pass_'+currentFirma,p); }
+function getBaseUrl(){ return window.location.href.split('?')[0]; }
+function getDriverLink(code){ return `${getBaseUrl()}?firma=${code}`; }
+function getAdminLink(code,pass){ return `${getBaseUrl()}?firma=${code}&admin=1&pw=${encodeURIComponent(pass)}`; }
+
+function toast(msg,type='ok'){
+  const c=document.getElementById('toast-container');
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;
+  t.textContent=msg;
+  c.appendChild(t); setTimeout(()=>t.remove(),3000);
+}
+
+// ── URL PARAMS ──
+function getParams(){
+  const p=new URLSearchParams(window.location.search);
+  return { firma:p.get('firma'), pw:p.get('pw'), admin:p.get('admin'), superadmin:p.get('superadmin') };
+}
+
+// ── FIREBASE ──
+async function initFirebase(){
+  if(!FIREBASE_CONFIG) return;
+  try{
+    const{initializeApp}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+    const{getDatabase,ref,onValue,push,set,remove,update}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+    const app=initializeApp(FIREBASE_CONFIG);
+    const db=getDatabase(app);
+    dbRef={ref,push,set,remove,update,db};
+    firebaseActive=true;
+    // Also sync companies list from Firebase
+    const compRef=ref(db,'lager-companies');
+    onValue(compRef,snap=>{ if(snap.val()) companies={...companies,...snap.val()}; renderSAList(); });
+  }catch(e){ console.warn('Firebase:',e); }
+}
+
+async function subscribeToFirma(code){
+  if(!firebaseActive) return;
+  const{ref,onValue}=dbRef;
+  onValue(ref(dbRef.db,`firmen/${code}/eintraege`),snap=>{
+    records=snap.val()||{};
+    renderTable(); updateStats();
+  });
+}
+
+async function saveRecord(rec){
+  if(firebaseActive){ const r=dbRef.push(dbRef.ref(dbRef.db,`firmen/${currentFirma}/eintraege`)); await dbRef.set(r,rec); return r.key; }
+  else{ const id=uid(); records[id]=rec; return id; }
+}
+async function updateRecord(id,data){
+  if(firebaseActive) await dbRef.update(dbRef.ref(dbRef.db,`firmen/${currentFirma}/eintraege/${id}`),data);
+  else records[id]={...records[id],...data};
+  renderTable(); updateStats();
+}
+async function deleteRecord(id){
+  if(firebaseActive) await dbRef.remove(dbRef.ref(dbRef.db,`firmen/${currentFirma}/eintraege/${id}`));
+  else delete records[id];
+  renderTable(); updateStats();
+}
+
+// ── BOOT: parse URL and route ──
+async function boot(){
+  await initFirebase();
+  const p=getParams();
+
+  if(p.superadmin==='1'){
+    showPage('superadmin'); return;
+  }
+
+  if(p.firma){
+    currentFirma=p.firma;
+    currentFirmaName=companies[p.firma]?.name || p.firma;
+
+    // Update select page for this company
+    document.getElementById('select-title').textContent=currentFirmaName;
+    document.getElementById('select-sub').textContent='Lagerverwaltung — '+p.firma;
+    document.getElementById('select-admin-tag').textContent='Firmen-Admin';
+    document.getElementById('driver-company-label').textContent=currentFirmaName;
+    document.getElementById('admin-login-sub').textContent=currentFirmaName;
+    document.getElementById('login-title').textContent=currentFirmaName+' — Admin';
+    document.getElementById('login-company-label').textContent='Bitte Admin-Passwort eingeben';
+
+    // Auto-login if pw in URL
+    if(p.admin==='1' && p.pw){
+      const storedPass=localStorage.getItem('lager_pass_'+currentFirma)||(companies[currentFirma]?.pass)||'admin123';
+      if(p.pw===storedPass){ enterAdmin(); return; }
+    }
+    showPage('select');
+  } else {
+    // No firma in URL — show super admin option on select
+    document.getElementById('select-choices').innerHTML+=`
+      <div class="choice-card" onclick="goSuperAdmin()" style="grid-column:1/-1;opacity:.7">
+        <div class="choice-icon" style="background:var(--blue-bg);border-color:#b5cef5"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <h2 style="color:var(--blue)">Super Admin</h2>
+        <p>Firmen erstellen &amp; Links verwalten</p>
+        <span class="choice-tag">Nur für den Betreiber</span>
+      </div>`;
+    showPage('select');
+  }
+}
+
+window.goSuperAdmin=function(){
+  const pw=prompt('Super Admin Passwort:');
+  if(pw===SUPER_ADMIN_PASS){ showPage('superadmin'); }
+  else if(pw!==null) toast('Falsches Passwort.','err');
+};
+
+// ── PAGE NAV ──
+window.showPage=function(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  if(p==='driver'){ document.getElementById('d-timein').value=nowLocal(); document.getElementById('d-date').value=todayLocal(); document.getElementById('driver-success').style.display='none'; document.getElementById('driver-form-area').style.display='block'; }
+  if(p==='admin'){ document.getElementById('m-timein').value=nowLocal(); document.getElementById('m-date').value=todayLocal(); document.getElementById('admin-topbar-title').textContent=(currentFirmaName||'Admin')+' — Dashboard'; document.getElementById('admin-topbar-sub').textContent=Object.keys(records).length+' Einträge'; document.getElementById('info-company').textContent=currentFirmaName||'—'; document.getElementById('info-code').textContent=currentFirma||'—'; renderTable(); updateStats(); }
+  if(p==='admin-login'){ document.getElementById('a-pass').value=''; document.getElementById('login-err').style.display='none'; }
+};
+
+function enterAdmin(){
+  if(currentFirma){ subscribeToFirma(currentFirma); }
+  showPage('admin');
+}
+
+// ── TABS ──
+window.switchTab=function(tab){
+  ['table','add','settings'].forEach(t=>{
+    document.getElementById('tab-content-'+t).style.display=t===tab?'block':'none';
+    document.getElementById('tab-'+t).classList.toggle('active',t===tab);
+  });
+};
+
+// ── STATS ──
+function updateStats(){
+  const total=Object.keys(records).length;
+  const inside=Object.values(records).filter(r=>!r.timeout).length;
+  const out=Object.values(records).filter(r=>r.timeout).length;
+  const today=todayLocal();
+  const todayCnt=Object.values(records).filter(r=>r.date===today).length;
+  document.getElementById('admin-topbar-sub').textContent=`${total} Einträge`;
+  document.getElementById('info-count').textContent=total;
+  document.getElementById('admin-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Gesamt</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--green)">${inside}</div><div class="stat-lbl">Im Lager</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--red)">${out}</div><div class="stat-lbl">Ausgefahren</div></div>
+    <div class="stat-card"><div class="stat-val">${todayCnt}</div><div class="stat-lbl">Heute</div></div>`;
+}
+
+// ── TABLE ──
+window.sortBy=function(col){
+  if(sortCol===col) sortDir*=-1; else{ sortCol=col; sortDir=1; }
+  ['name','plate','car','timein','timeout','date'].forEach(c=>{ const el=document.getElementById('arrow-'+c); if(el){ el.textContent='↕'; el.closest('th').classList.remove('sorted'); } });
+  const a=document.getElementById('arrow-'+col);
+  if(a){ a.textContent=sortDir===1?'↑':'↓'; a.closest('th').classList.add('sorted'); }
+  renderTable();
+};
+
+window.renderTable=function(){
+  const q=(document.getElementById('filter-q')?.value||'').toLowerCase();
+  const st=document.getElementById('filter-status')?.value||'';
+  const fd=document.getElementById('filter-date')?.value||'';
+  const today=todayLocal();
+  let arr=Object.entries(records).map(([id,r])=>({id,...r})).filter(r=>{
+    const text=`${r.name} ${r.plate} ${r.car} ${r.note||''}`.toLowerCase();
+    return (!q||text.includes(q))&&(!st||(st==='in'&&!r.timeout)||(st==='out'&&r.timeout))&&(!fd||(fd==='today'&&r.date===today));
+  });
+  arr.sort((a,b)=>{ let av=a[sortCol]||'',bv=b[sortCol]||''; return typeof av==='number'?sortDir*(av-bv):sortDir*String(av).localeCompare(String(bv),'de'); });
+  const tbody=document.getElementById('admin-tbody');
+  const empty=document.getElementById('table-empty');
+  const wrap=document.getElementById('tbl-wrap');
+  if(!arr.length){ wrap.style.display='none'; empty.style.display='block'; return; }
+  wrap.style.display='block'; empty.style.display='none';
+  tbody.innerHTML=arr.map(r=>`
+    <tr id="row-${r.id}">
+      <td style="font-weight:600">${r.name}</td>
+      <td><span class="td-plate">${r.plate}</span></td>
+      <td style="color:var(--text2);font-size:13px">${r.car}${r.note?`<span style="color:var(--text3);font-size:11px;display:block">${r.note}</span>`:''}</td>
+      <td class="td-time">${fmtDT(r.timein)}</td>
+      <td class="td-time">${r.timeout?fmtDT(r.timeout):'<span style="color:var(--text3)">—</span>'}</td>
+      <td style="color:var(--text2);font-size:13px">${fmtDate(r.date)}</td>
+      <td><span class="badge ${r.timeout?'badge-out':'badge-pending'}">${r.timeout?'Ausgefahren':'Im Lager'}</span></td>
+      <td class="td-actions">
+        <button class="btn btn-sm btn-icon" onclick="toggleInlineEdit('${r.id}')" title="Bearbeiten"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="btn btn-sm btn-icon btn-danger" onclick="delRecord('${r.id}')" title="Löschen"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
+      </td>
+    </tr>
+    <tr id="editrow-${r.id}" style="display:none">
+      <td colspan="8" style="padding:0">
+        <div style="padding:14px 16px;background:#fafaf8;border-bottom:1px solid var(--border)">
+          <div class="edit-row-grid">
+            <div class="fg"><label>Fahrername</label><input type="text" id="er-name-${r.id}" value="${r.name}"/></div>
+            <div class="fg"><label>Kennzeichen</label><input type="text" id="er-plate-${r.id}" value="${r.plate}" style="font-family:var(--mono)"/></div>
+            <div class="fg"><label>Fahrzeug</label><input type="text" id="er-car-${r.id}" value="${r.car}"/></div>
+            <div class="fg"><label>Einfahrt</label><input type="datetime-local" id="er-timein-${r.id}" value="${r.timein}"/></div>
+            <div class="fg"><label>Ausfahrt</label><input type="datetime-local" id="er-timeout-${r.id}" value="${r.timeout||''}"/></div>
+            <div class="fg"><label>Bemerkung</label><input type="text" id="er-note-${r.id}" value="${r.note||''}"/></div>
+          </div>
+          <div class="edit-row-actions">
+            <button class="btn btn-sm btn-primary" onclick="saveInlineEdit('${r.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Speichern</button>
+            <button class="btn btn-sm" onclick="toggleInlineEdit('${r.id}')">Abbrechen</button>
+          </div>
+        </div>
+      </td>
+    </tr>`).join('');
+};
+
+window.toggleInlineEdit=function(id){
+  if(currentEditId&&currentEditId!==id){ const p=document.getElementById('editrow-'+currentEditId); if(p) p.style.display='none'; }
+  const row=document.getElementById('editrow-'+id);
+  const open=row.style.display!=='none';
+  row.style.display=open?'none':'table-row';
+  currentEditId=open?null:id;
+};
+window.saveInlineEdit=async function(id){
+  const data={name:document.getElementById('er-name-'+id).value.trim(),plate:document.getElementById('er-plate-'+id).value.trim(),car:document.getElementById('er-car-'+id).value.trim(),timein:document.getElementById('er-timein-'+id).value,timeout:document.getElementById('er-timeout-'+id).value,note:document.getElementById('er-note-'+id).value.trim()};
+  if(!data.name||!data.plate||!data.car){ toast('Pflichtfelder fehlen.','err'); return; }
+  await updateRecord(id,data); currentEditId=null; toast('Eintrag aktualisiert.');
+};
+window.delRecord=async function(id){ if(!confirm('Eintrag wirklich löschen?')) return; await deleteRecord(id); toast('Eintrag gelöscht.'); };
+window.deleteAll=async function(){
+  if(!confirm('ALLE Einträge löschen?')) return;
+  if(!confirm('Wirklich sicher? Kann nicht rückgängig gemacht werden!')) return;
+  if(firebaseActive) await dbRef.set(dbRef.ref(dbRef.db,`firmen/${currentFirma}/eintraege`),null);
+  else records={};
+  renderTable(); updateStats(); toast('Alle Einträge gelöscht.');
+};
+
+// ── DRIVER FORM ──
+window.driverSubmit=async function(){
+  const name=document.getElementById('d-name').value.trim();
+  const plate=document.getElementById('d-plate').value.trim();
+  const car=document.getElementById('d-car').value.trim();
+  const timein=document.getElementById('d-timein').value;
+  const timeout=document.getElementById('d-timeout').value;
+  const date=document.getElementById('d-date').value;
+  const note=document.getElementById('d-note').value.trim();
+  if(!name||!plate||!car||!timein||!date){ toast('Bitte alle Pflichtfelder (*) ausfüllen.','err'); return; }
+  await saveRecord({name,plate,car,timein,timeout,date,note,ts:Date.now()});
+  document.getElementById('driver-form-area').style.display='none';
+  document.getElementById('driver-success-msg').textContent=`${name} (${plate}) wurde erfolgreich erfasst.`;
+  document.getElementById('driver-success').style.display='block';
+  if(!firebaseActive) updateStats();
+  toast('Eintrag gespeichert!');
+};
+window.clearDriverForm=function(){ ['d-name','d-plate','d-car','d-note'].forEach(id=>document.getElementById(id).value=''); document.getElementById('d-timein').value=nowLocal(); document.getElementById('d-timeout').value=''; document.getElementById('d-date').value=todayLocal(); };
+window.resetDriverForm=function(){ clearDriverForm(); document.getElementById('driver-success').style.display='none'; document.getElementById('driver-form-area').style.display='block'; };
+
+// ── ADMIN LOGIN ──
+window.adminLogin=function(){
+  if(document.getElementById('a-pass').value===getPass()){ document.getElementById('login-err').style.display='none'; enterAdmin(); }
+  else document.getElementById('login-err').style.display='block';
+};
+window.adminLogout=function(){ showPage('select'); };
+
+// ── MANUAL ADD ──
+window.adminAdd=async function(){
+  const name=document.getElementById('m-name').value.trim(),plate=document.getElementById('m-plate').value.trim(),car=document.getElementById('m-car').value.trim();
+  const timein=document.getElementById('m-timein').value,timeout=document.getElementById('m-timeout').value,date=document.getElementById('m-date').value,note=document.getElementById('m-note').value.trim();
+  if(!name||!plate||!car||!timein||!date){ toast('Pflichtfelder ausfüllen.','err'); return; }
+  await saveRecord({name,plate,car,timein,timeout,date,note,ts:Date.now()});
+  clearManualForm(); if(!firebaseActive){ renderTable(); updateStats(); } toast('Eintrag hinzugefügt!');
+};
+window.clearManualForm=function(){ ['m-name','m-plate','m-car','m-note'].forEach(id=>document.getElementById(id).value=''); document.getElementById('m-timein').value=nowLocal(); document.getElementById('m-timeout').value=''; document.getElementById('m-date').value=todayLocal(); };
+
+// ── PASSWORD ──
+window.checkPwStrength=function(){
+  const pw=document.getElementById('pw-new').value;
+  const bar=document.getElementById('pw-strength-bar'),lbl=document.getElementById('pw-strength-label');
+  if(!pw){ bar.style.width='0%'; lbl.textContent=''; return; }
+  let s=0; if(pw.length>=6)s++; if(pw.length>=10)s++; if(/[A-Z]/.test(pw))s++; if(/[0-9]/.test(pw))s++; if(/[^A-Za-z0-9]/.test(pw))s++;
+  const levels=[['0%','transparent',''],['25%','#e74c3c','Schwach'],['50%','#e67e22','Mittel'],['75%','#f1c40f','Gut'],['100%','#2d6a4f','Stark'],['100%','#2d6a4f','Sehr stark']];
+  const[w,c,t]=levels[s]||levels[0]; bar.style.width=w; bar.style.background=c; lbl.textContent=t; lbl.style.color=c;
+};
+window.changePassword=function(){
+  const cur=document.getElementById('pw-current').value,nw=document.getElementById('pw-new').value,conf=document.getElementById('pw-confirm').value;
+  const msg=document.getElementById('pw-msg');
+  const show=(txt,ok)=>{ msg.style.display='block'; msg.textContent=txt; msg.style.background=ok?'var(--green-bg)':'var(--red-bg)'; msg.style.color=ok?'var(--green)':'var(--red)'; msg.style.border=`1px solid ${ok?'#b7dfc2':'#f5c6c6'}`; };
+  if(cur!==getPass()){ show('Aktuelles Passwort ist falsch.',false); return; }
+  if(nw.length<6){ show('Mindestens 6 Zeichen.',false); return; }
+  if(nw!==conf){ show('Passwörter stimmen nicht überein.',false); return; }
+  setPass(nw);
+  // Also update in companies object and localStorage
+  if(companies[currentFirma]) companies[currentFirma].pass=nw;
+  localStorage.setItem('lager_companies',JSON.stringify(companies));
+  clearPwForm(); show('Passwort erfolgreich geändert!',true); toast('Passwort geändert!');
+};
+window.clearPwForm=function(){ ['pw-current','pw-new','pw-confirm'].forEach(id=>document.getElementById(id).value=''); document.getElementById('pw-strength-bar').style.width='0%'; document.getElementById('pw-strength-label').textContent=''; document.getElementById('pw-msg').style.display='none'; };
+window.copyDriverLink=function(){ const link=getDriverLink(currentFirma); navigator.clipboard.writeText(link).then(()=>toast('Fahrer-Link kopiert!')).catch(()=>{ prompt('Fahrer-Link:',link); }); };
+
+// ── CSV ──
+window.exportCSV=function(){
+  const arr=Object.entries(records).map(([id,r])=>({id,...r}));
+  if(!arr.length){ toast('Keine Daten.','err'); return; }
+  const hdr='ID,Fahrername,Kennzeichen,Fahrzeug,Einfahrt,Ausfahrt,Datum,Bemerkung\n';
+  const rows=arr.map(r=>[r.id,r.name,r.plate,r.car,fmtDT(r.timein),r.timeout?fmtDT(r.timeout):'Im Lager',fmtDate(r.date),r.note||''].map(v=>`"${v}"`).join(',')).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([hdr+rows],{type:'text/csv;charset=utf-8;'})); a.download=`lager-${currentFirma}-${todayLocal()}.csv`; a.click(); toast('CSV heruntergeladen.');
+};
+
+// ── SUPER ADMIN ──
+window.autoSlug=function(){
+  const name=document.getElementById('sa-name').value;
+  const slug=name.toLowerCase().replace(/[äöü]/g,c=>({ä:'ae',ö:'oe',ü:'ue'}[c]||c)).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  document.getElementById('sa-code').value=slug;
+};
+
+window.addCompany=function(){
+  const name=document.getElementById('sa-name').value.trim();
+  const code=document.getElementById('sa-code').value.trim().toLowerCase().replace(/\s+/g,'-');
+  const pass=document.getElementById('sa-pass').value;
+  if(!name||!code||!pass){ toast('Alle Felder ausfüllen.','err'); return; }
+  if(companies[code]){ toast('Firma-Code existiert bereits.','err'); return; }
+  companies[code]={name,pass,created:Date.now()};
+  localStorage.setItem('lager_companies',JSON.stringify(companies));
+  if(firebaseActive) dbRef.set(dbRef.ref(dbRef.db,`lager-companies/${code}`),{name,created:Date.now()});
+  document.getElementById('sa-name').value=''; document.getElementById('sa-code').value=''; document.getElementById('sa-pass').value='';
+  renderSAList(); toast(`Firma "${name}" erstellt!`);
+};
+
+window.deleteCompany=function(code){
+  if(!confirm(`Firma "${companies[code]?.name}" wirklich löschen?`)) return;
+  delete companies[code]; localStorage.setItem('lager_companies',JSON.stringify(companies));
+  renderSAList(); toast('Firma gelöscht.');
+};
+
+window.copyLink=function(link){ navigator.clipboard.writeText(link).then(()=>toast('Link kopiert!')).catch(()=>{ prompt('Link:',link); }); };
+
+function renderSAList(){
+  const list=document.getElementById('sa-companies-list');
+  const entries=Object.entries(companies);
+  if(!entries.length){ list.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="width:32px;height:32px;opacity:.4;display:block;margin:0 auto 8px"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>Noch keine Firmen erstellt</div>'; return; }
+  list.innerHTML=entries.map(([code,c])=>{
+    const driverLink=getDriverLink(code);
+    const adminPass=localStorage.getItem('lager_pass_'+code)||c.pass;
+    const adminLink=getAdminLink(code,adminPass);
+    return `<div class="company-row">
+      <div class="company-avatar">${code.slice(0,3).toUpperCase()}</div>
+      <div class="company-info">
+        <div class="company-name">${c.name}</div>
+        <div class="company-code">${code}</div>
+        <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Fahrer-Link</div>
+            <span class="company-link" onclick="copyLink('${driverLink}')" title="${driverLink}">${driverLink}</span>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--red);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Admin-Link (privat!)</div>
+            <span class="company-link" style="background:var(--red-bg);border-color:#f5c6c6;color:var(--red)" onclick="copyLink('${adminLink}')" title="Klicken zum Kopieren">Klicken zum Kopieren ↗</span>
+          </div>
+        </div>
+      </div>
+      <div class="company-actions">
+        <button class="btn btn-sm" onclick="copyLink('${driverLink}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Fahrer</button>
+        <button class="btn btn-sm btn-blue" onclick="copyLink('${adminLink}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Admin</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteCompany('${code}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+boot();
+</script>
+</body>
+</html>
