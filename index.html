@@ -486,7 +486,7 @@ async function initFirebase(){
 }
 
 // ── PHOTO COMPRESSION → blob for Firebase Storage ──
-function compressToBlob(file, maxW=900, quality=0.70){
+function compressToBlob(file, maxW=1600, quality=0.88){
   return new Promise(resolve=>{
     const img=new Image();
     const url=URL.createObjectURL(file);
@@ -979,37 +979,125 @@ boot();
 </script>
 
 <!-- LIGHTBOX -->
-<div id="lightbox" onclick="closeLightbox()" style="position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px">
-  <button onclick="closeLightbox()" style="position:absolute;top:20px;right:24px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:22px;cursor:pointer;width:40px;height:40px;border-radius:50%;line-height:1" title="Schließen">✕</button>
-  <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()" style="max-width:92vw;max-height:80vh;border-radius:10px;object-fit:contain;transition:opacity .2s"/>
-  <div style="display:flex;align-items:center;gap:16px">
-    <div id="lightbox-caption" style="color:#fff;font-size:13px;opacity:.8"></div>
-    <a id="lightbox-download" href="#" download="foto.jpg" target="_blank" onclick="event.stopPropagation()"
-       style="color:#fff;font-size:12px;opacity:.7;text-decoration:none;border:1px solid rgba(255,255,255,.4);padding:5px 12px;border-radius:6px">⬇ Speichern</a>
+<div id="lightbox" onclick="closeLightbox()" style="position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;overflow:hidden">
+  <button onclick="closeLightbox()" style="position:absolute;top:16px;right:20px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:20px;cursor:pointer;width:40px;height:40px;border-radius:50%;z-index:2" title="Schließen (Esc)">✕</button>
+  <div style="position:absolute;top:16px;left:20px;color:rgba(255,255,255,.5);font-size:11px;z-index:2">Tippen zum Zoomen • Zwei Finger zum Reinzoomen</div>
+  <img id="lightbox-img" src="" alt=""
+    style="max-width:94vw;max-height:78vh;border-radius:10px;object-fit:contain;transition:opacity .25s,transform .2s;transform-origin:center center;touch-action:none"
+    onclick="event.stopPropagation()"/>
+  <div style="display:flex;align-items:center;gap:14px;z-index:2">
+    <div id="lightbox-caption" style="color:#fff;font-size:13px;opacity:.85;max-width:60vw;text-align:center"></div>
+    <button onclick="event.stopPropagation();downloadPhoto()"
+      style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:12px;padding:6px 14px;border-radius:8px;cursor:pointer">
+      ⬇ Speichern
+    </button>
   </div>
 </div>
 
 <script>
+var lbScale=1, lbStartDist=0, lbIsPinching=false, lbCurrentUrl='';
+
 function openLightboxEl(el){
-  var url=decodeURIComponent(el.getAttribute('data-url'));
+  lbCurrentUrl=decodeURIComponent(el.getAttribute('data-url'));
   var caption=el.getAttribute('data-caption');
   var lb=document.getElementById('lightbox');
   var img=document.getElementById('lightbox-img');
   var cap=document.getElementById('lightbox-caption');
-  var dl=document.getElementById('lightbox-download');
   img.src='';
-  cap.textContent=caption;
-  if(dl){ dl.href=url; }
+  lbScale=1;
+  img.style.transform='scale(1)';
+  img.style.cursor='zoom-in';
+  cap.textContent='⏳ '+caption+' wird geladen…';
   lb.style.display='flex';
   img.style.opacity='0.3';
-  img.onload=function(){ img.style.opacity='1'; };
-  img.onerror=function(){ cap.textContent=caption+' — wird noch hochgeladen…'; };
-  img.src=url;
+  img.onload=function(){
+    img.style.opacity='1';
+    cap.textContent=caption;
+  };
+  img.onerror=function(){
+    cap.textContent=caption+' — wird noch hochgeladen, bitte warten…';
+  };
+  img.src=lbCurrentUrl;
 }
+
 function closeLightbox(){
   document.getElementById('lightbox').style.display='none';
   document.getElementById('lightbox-img').src='';
+  lbScale=1;
 }
+
+// Click to zoom in/out
+document.addEventListener('DOMContentLoaded', function(){
+  var img=document.getElementById('lightbox-img');
+  if(!img) return;
+
+  // Click zoom toggle
+  img.addEventListener('click', function(e){
+    e.stopPropagation();
+    lbScale = lbScale===1 ? 2.5 : 1;
+    img.style.transform='scale('+lbScale+')';
+    img.style.cursor = lbScale===1 ? 'zoom-in' : 'zoom-out';
+  });
+
+  // Pinch to zoom (touch devices)
+  img.addEventListener('touchstart', function(e){
+    if(e.touches.length===2){
+      lbIsPinching=true;
+      lbStartDist=Math.hypot(
+        e.touches[0].clientX-e.touches[1].clientX,
+        e.touches[0].clientY-e.touches[1].clientY
+      );
+      e.preventDefault();
+    }
+  },{passive:false});
+
+  img.addEventListener('touchmove', function(e){
+    if(lbIsPinching && e.touches.length===2){
+      var dist=Math.hypot(
+        e.touches[0].clientX-e.touches[1].clientX,
+        e.touches[0].clientY-e.touches[1].clientY
+      );
+      var newScale=Math.min(5, Math.max(0.5, lbScale*(dist/lbStartDist)));
+      img.style.transform='scale('+newScale+')';
+      e.preventDefault();
+    }
+  },{passive:false});
+
+  img.addEventListener('touchend', function(e){
+    if(lbIsPinching){
+      var finalTransform=img.style.transform;
+      var match=finalTransform.match(/scale\(([^)]+)\)/);
+      lbScale=match ? parseFloat(match[1]) : 1;
+      lbIsPinching=false;
+      lbStartDist=0;
+    }
+  });
+});
+
+// Download — fetch blob and trigger download (works with Firebase Storage)
+function downloadPhoto(){
+  if(!lbCurrentUrl) return;
+  var cap=document.getElementById('lightbox-caption');
+  var origText=cap.textContent;
+  cap.textContent='⏳ Download wird vorbereitet…';
+  fetch(lbCurrentUrl)
+    .then(function(r){ return r.blob(); })
+    .then(function(blob){
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='foto-'+Date.now()+'.jpg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(a.href); },1000);
+      cap.textContent=origText;
+    })
+    .catch(function(e){
+      cap.textContent=origText;
+      alert('Download fehlgeschlagen. Bitte Foto lange drücken zum Speichern.');
+    });
+}
+
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape') closeLightbox();
 });
