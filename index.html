@@ -437,6 +437,7 @@ const FIREBASE_CONFIG = {
 const SUPER_ADMIN_PASS = 'superadmin123';
 
 let records = {};
+let STORAGE = null;
 let companies = {};
 let currentFirma = null;
 let currentFirmaName = null;
@@ -476,15 +477,16 @@ function getParams(){
 async function initFirebase(){
   const{initializeApp}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
   const{getDatabase,ref,onValue,push,set,remove,update,get}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
-  // Firebase Storage not needed — photos stored as base64 in Realtime DB
+  const{getStorage,ref:sRef,uploadBytes,getDownloadURL}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js');
   const app=initializeApp(FIREBASE_CONFIG);
   const db=getDatabase(app);
+  const storage=getStorage(app);
   DB={ref,onValue,push,set,remove,update,get,db};
+  STORAGE={sRef,uploadBytes,getDownloadURL,storage};
 }
 
-// ── PHOTO → tiny base64 (stored in Realtime DB, no Storage needed) ──
-// Target: ~30-60KB per photo — very fast to save and load
-function compressToBase64(file, maxW=400, quality=0.45){
+// ── PHOTO COMPRESSION → blob for Firebase Storage ──
+function compressToBlob(file, maxW=900, quality=0.70){
   return new Promise(resolve=>{
     const img=new Image();
     const url=URL.createObjectURL(file);
@@ -495,13 +497,16 @@ function compressToBase64(file, maxW=400, quality=0.45){
       const canvas=document.createElement('canvas');
       canvas.width=w; canvas.height=h;
       canvas.getContext('2d').drawImage(img,0,0,w,h);
-      const b64=canvas.toDataURL('image/jpeg', quality);
-      console.log(`Photo compressed: ${Math.round(b64.length/1024)}KB`);
-      resolve(b64);
-      URL.revokeObjectURL(url);
+      canvas.toBlob(blob=>{ URL.revokeObjectURL(url); resolve(blob); },'image/jpeg',quality);
     };
     img.src=url;
   });
+}
+
+async function uploadToStorage(blob, path){
+  const ref=STORAGE.sRef(STORAGE.storage, path);
+  const snap=await STORAGE.uploadBytes(ref, blob);
+  return await STORAGE.getDownloadURL(snap.ref);
 }
 
 window.handlePhoto=function(key, input){
@@ -545,23 +550,7 @@ function updatePhotoStatus(){
   }
 }
 
-async function compressAllPhotos(){
-  const keys=['plate','kmin','kmout'];
-  const result={plate:'',kmin:'',kmout:''};
-  const toProcess=keys.filter(k=>photoData[k]);
-  let done=0;
-  for(const key of keys){
-    if(!photoData[key]) continue;
-    done++;
-    updateSubmitBtn(`Foto ${done}/${toProcess.length} wird komprimiert…`);
-    try{
-      result[key]=await compressToBase64(photoData[key]);
-    }catch(e){
-      console.error('Compress failed:',key,e);
-    }
-  }
-  return result;
-}
+
 
 function updateSubmitBtn(text){
   const btn=document.getElementById('driver-submit-btn');
@@ -808,40 +797,59 @@ window.driverSubmit=async function(){
 
   const btn=document.getElementById('driver-submit-btn');
   if(btn) btn.disabled=true;
-  updateSubmitBtn('Wird gespeichert…');
+  updateSubmitBtn('Eintrag wird gespeichert…');
 
   try{
-    // Step 1: Compress photos locally if any (no network needed)
-    let photoPlate='', photoKmIn='', photoKmOut='';
-    const hasPhotos=Object.values(photoData).some(Boolean);
-    if(hasPhotos){
-      updateSubmitBtn('Fotos werden komprimiert…');
-      if(photoData.plate){ photoPlate=await compressToBase64(photoData.plate); }
-      if(photoData.kmin){  photoKmIn =await compressToBase64(photoData.kmin);  }
-      if(photoData.kmout){ photoKmOut=await compressToBase64(photoData.kmout); }
-    }
-
-    // Step 2: Save text entry first (always fast)
-    updateSubmitBtn('Eintrag wird gespeichert…');
+    // Step 1: Save text entry immediately — no photos yet (always fast, <1sec)
     localStorage.setItem('lager_driver_'+currentFirma, JSON.stringify({name,plate,car}));
     const rec={name,plate,car,timein,timeout,date,note,ts:Date.now(),
-               photoPlate,photoKmIn,photoKmOut};
-    await saveRecord(rec);
+               photoPlate:'',photoKmIn:'',photoKmOut:'',photosUploading:true};
+    const recId=await saveRecord(rec);
 
-    // Done!
+    // Step 2: Show success immediately — driver is done!
     document.getElementById('driver-form-area').style.display='none';
     document.getElementById('driver-success-msg').textContent=
       `${name} (${plate}) wurde erfolgreich erfasst.`;
     document.getElementById('driver-success').style.display='block';
+    if(btn) btn.disabled=false;
+    updateSubmitBtn('Einfahrt speichern');
     toast('Eintrag gespeichert!');
+
+    // Step 3: Upload photos in background (driver doesn't wait)
+    const hasPhotos=Object.values(photoData).some(Boolean);
+    if(hasPhotos && recId){
+      uploadPhotosBackground(recId, name, plate);
+    }
   }catch(e){
     console.error('Submit error:',e);
     toast('Fehler: '+(e.message||'Bitte erneut versuchen.'),'err');
-  }finally{
     if(btn) btn.disabled=false;
     updateSubmitBtn('Einfahrt speichern');
   }
 };
+
+// Upload photos silently in background after entry is saved
+async function uploadPhotosBackground(recId, name, plate){
+  try{
+    const updates={photosUploading:false};
+    if(photoData.plate){
+      const blob=await compressToBlob(photoData.plate);
+      updates.photoPlate=await uploadToStorage(blob,`firmen/${currentFirma}/${recId}/plate.jpg`);
+    }
+    if(photoData.kmin){
+      const blob=await compressToBlob(photoData.kmin);
+      updates.photoKmIn=await uploadToStorage(blob,`firmen/${currentFirma}/${recId}/kmin.jpg`);
+    }
+    if(photoData.kmout){
+      const blob=await compressToBlob(photoData.kmout);
+      updates.photoKmOut=await uploadToStorage(blob,`firmen/${currentFirma}/${recId}/kmout.jpg`);
+    }
+    await DB.update(DB.ref(DB.db,`firmen/${currentFirma}/eintraege/${recId}`), updates);
+    console.log('Photos uploaded for', name, plate);
+  }catch(e){
+    console.warn('Background photo upload failed:',e);
+  }
+}
 
 window.clearDriverForm=function(){
   ['d-name','d-plate','d-car','d-note'].forEach(id=>document.getElementById(id).value='');
