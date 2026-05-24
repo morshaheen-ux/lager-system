@@ -483,6 +483,7 @@ async function initFirebase(){
   const storage=getStorage(app);
   DB={ref,onValue,push,set,remove,update,get,db};
   STORAGE={sRef,uploadBytes,getDownloadURL,storage};
+  console.log('Firebase + Storage initialized OK');
 }
 
 // No compression — upload original photo for maximum quality
@@ -690,10 +691,11 @@ window.renderTable=function(){
   if(!arr.length){ wrap.style.display='none'; empty.style.display='block'; return; }
   wrap.style.display='block'; empty.style.display='none';
 
-  function thumbHtml(url, caption){
-    if(!url) return '<span style="color:var(--text3);font-size:11px">—</span>';
+  function thumbHtml(url, caption, uploading){
+    if(!url && uploading) return `<span style="color:var(--amber);font-size:10px;background:var(--amber-bg);padding:2px 6px;border-radius:4px" title="${caption} wird hochgeladen">⏳</span>`;
+    if(!url) return '<span style="color:var(--text3);font-size:11px" title="Kein Foto">—</span>';
     const safe=encodeURIComponent(url);
-    return `<img class="photo-thumb" src="${url}" data-url="${safe}" data-caption="${caption}" onclick="openLightboxEl(this)" title="Klicken zum Vergrößern: ${caption}"/>`;
+    return `<img class="photo-thumb" src="${url}" data-url="${safe}" data-caption="${caption}" onclick="openLightboxEl(this)" title="Klicken: ${caption}" onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span style=\"color:var(--text3);font-size:10px\" title=\"Foto lädt noch\">⏳</span>')"/>`;
   }
 
   tbody.innerHTML=arr.map(r=>`
@@ -706,9 +708,9 @@ window.renderTable=function(){
       <td style="color:var(--text2);font-size:13px">${fmtDate(r.date)}</td>
       <td>
         <div class="photo-thumbs">
-          ${thumbHtml(r.photoPlate,'Kennzeichen')}
-          ${thumbHtml(r.photoKmIn,'KM Einfahrt')}
-          ${thumbHtml(r.photoKmOut,'KM Ausfahrt')}
+          ${thumbHtml(r.photoPlate,'Kennzeichen',r.photosUploading)}
+          ${thumbHtml(r.photoKmIn,'KM Einfahrt',r.photosUploading)}
+          ${thumbHtml(r.photoKmOut,'KM Ausfahrt',r.photosUploading)}
         </div>
       </td>
       <td><span class="badge ${r.timeout?'badge-out':'badge-pending'}">${r.timeout?'Ausgefahren':'Im Lager'}</span></td>
@@ -811,24 +813,33 @@ window.driverSubmit=async function(){
 
 // Upload photos silently in background after entry is saved
 async function uploadPhotosBackground(recId, name, plate){
+  if(!STORAGE){ console.warn('Storage not initialized'); return; }
   try{
     const updates={photosUploading:false};
     if(photoData.plate){
+      console.log('Uploading plate photo...');
       const blob=await compressToBlob(photoData.plate);
       updates.photoPlate=await uploadToStorage(blob,`firmen/${currentFirma}/${recId}/plate.jpg`);
+      console.log('Plate uploaded:', updates.photoPlate);
     }
     if(photoData.kmin){
+      console.log('Uploading kmin photo...');
       const blob=await compressToBlob(photoData.kmin);
       updates.photoKmIn=await uploadToStorage(blob,`firmen/${currentFirma}/${recId}/kmin.jpg`);
+      console.log('KmIn uploaded:', updates.photoKmIn);
     }
     if(photoData.kmout){
+      console.log('Uploading kmout photo...');
       const blob=await compressToBlob(photoData.kmout);
       updates.photoKmOut=await uploadToStorage(blob,`firmen/${currentFirma}/${recId}/kmout.jpg`);
+      console.log('KmOut uploaded:', updates.photoKmOut);
     }
     await DB.update(DB.ref(DB.db,`firmen/${currentFirma}/eintraege/${recId}`), updates);
-    console.log('Photos uploaded for', name, plate);
+    console.log('All photos saved to DB for', name, plate);
   }catch(e){
-    console.warn('Background photo upload failed:',e);
+    console.error('Photo upload failed:', e.code, e.message);
+    // Try to mark as done even if photos failed
+    try{ await DB.update(DB.ref(DB.db,`firmen/${currentFirma}/eintraege/${recId}`),{photosUploading:false}); }catch(_){}
   }
 }
 
