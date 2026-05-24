@@ -207,7 +207,7 @@ tbody tr:hover{background:var(--surface2)}
         </div>
       </div>
       <div class="card">
-        <div class="card-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Fotos (optional)</div>
+        <div class="card-header" style="justify-content:space-between"><div style="display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Fotos (optional)</div><span style="font-size:11px;color:var(--text3);font-weight:400">Fotos werden automatisch komprimiert</span></div>
         <div class="photo-grid">
           <div class="photo-slot">
             <label>📋 Kennzeichenfoto</label>
@@ -246,7 +246,7 @@ tbody tr:hover{background:var(--surface2)}
         <div id="photo-status" style="margin-top:10px;font-size:12px;color:var(--text3)">0 / 3 Fotos hochgeladen</div>
       </div>
       <div class="btn-row">
-        <button class="btn btn-primary" onclick="driverSubmit()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Einfahrt speichern</button>
+        <button class="btn btn-primary" id="driver-submit-btn" onclick="driverSubmit()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Einfahrt speichern</button>
         <button class="btn" onclick="clearDriverForm()">Zurücksetzen</button>
       </div>
     </div>
@@ -491,19 +491,20 @@ async function uploadPhoto(file, path){
   return await STORAGE.getDownloadURL(snap.ref);
 }
 
-// Compress image before upload (max 1200px, 80% quality)
+// Compress image before upload (max 800px, 65% quality — fast upload)
 function compressImage(file){
   return new Promise(resolve=>{
     const img=new Image();
     const url=URL.createObjectURL(file);
     img.onload=()=>{
-      const maxW=1200;
+      const maxW=800;
       let w=img.width, h=img.height;
       if(w>maxW){ h=Math.round(h*maxW/w); w=maxW; }
+      if(h>800){ w=Math.round(w*800/h); h=800; }
       const canvas=document.createElement('canvas');
       canvas.width=w; canvas.height=h;
       canvas.getContext('2d').drawImage(img,0,0,w,h);
-      canvas.toBlob(blob=>resolve(blob),'image/jpeg',0.82);
+      canvas.toBlob(blob=>resolve(blob),'image/jpeg',0.65);
       URL.revokeObjectURL(url);
     };
     img.src=url;
@@ -554,22 +555,34 @@ function updatePhotoStatus(){
 async function uploadAllPhotos(recordId){
   const keys=['plate','kmin','kmout'];
   const labels=['Kennzeichen','KM-Einfahrt','KM-Ausfahrt'];
+  const toUpload=keys.filter(k=>photoData[k]);
+  let done=0;
   for(let i=0;i<keys.length;i++){
     const key=keys[i];
     if(!photoData[key]) continue;
     const bar=document.getElementById('bar-'+key);
+    const preview=document.getElementById('preview-'+key);
     if(bar) bar.style.display='block';
+    if(preview) preview.style.opacity='0.5';
+    updateSubmitBtn(`Foto ${done+1}/${toUpload.length} wird hochgeladen…`);
     try{
       const compressed=await compressImage(photoData[key]);
       const path=`firmen/${currentFirma}/${recordId}/${key}.jpg`;
       const url=await uploadPhoto(compressed, path);
       photoUrls[key]=url;
+      done++;
     }catch(e){
       console.error('Upload failed:',key,e);
       toast(`Foto ${labels[i]} konnte nicht hochgeladen werden.`,'err');
     }
     if(bar) bar.style.display='none';
+    if(preview) preview.style.opacity='1';
   }
+}
+
+function updateSubmitBtn(text){
+  const btn=document.getElementById('driver-submit-btn');
+  if(btn) btn.textContent=text;
 }
 
 // ── COMPANY OPS ──
