@@ -499,7 +499,9 @@ function compressToBlob(file, maxW=900, quality=0.70){
       canvas.getContext('2d').drawImage(img,0,0,w,h);
       canvas.toBlob(blob=>{ URL.revokeObjectURL(url); resolve(blob); },'image/jpeg',quality);
     };
-    img.src=url;
+    const dl=document.getElementById('lightbox-download');
+  if(dl) dl.href=url;
+  img.src=url;
   });
 }
 
@@ -705,7 +707,8 @@ window.renderTable=function(){
 
   function thumbHtml(url, caption){
     if(!url) return '<span style="color:var(--text3);font-size:11px">—</span>';
-    return `<img class="photo-thumb" src="${url}" onclick="openLightbox('${url}','${caption}')" title="${caption}"/>`;
+    const safe=encodeURIComponent(url);
+    return `<img class="photo-thumb" src="${url}" data-url="${safe}" data-caption="${caption}" onclick="openLightboxEl(this)" title="Klicken zum Vergrößern: ${caption}"/>`;
   }
 
   tbody.innerHTML=arr.map(r=>`
@@ -750,14 +753,28 @@ window.renderTable=function(){
 };
 
 // ── LIGHTBOX ──
-window.openLightbox=function(url, caption){
-  document.getElementById('lightbox-img').src=url;
-  document.getElementById('lightbox-caption').textContent=caption;
-  document.getElementById('lightbox').classList.add('open');
+window.openLightboxEl=function(el){
+  const url=decodeURIComponent(el.getAttribute('data-url'));
+  const caption=el.getAttribute('data-caption');
+  const lb=document.getElementById('lightbox');
+  const img=document.getElementById('lightbox-img');
+  const cap=document.getElementById('lightbox-caption');
+  img.src=''; // reset first
+  img.onload=null;
+  cap.textContent=caption;
+  lb.classList.add('open');
+  // Show loading state
+  img.style.opacity='0.3';
+  img.onload=()=>{ img.style.opacity='1'; };
+  img.onerror=()=>{ cap.textContent=caption+' (Foto wird noch hochgeladen…)'; };
+  img.src=url;
 };
 window.closeLightbox=function(){
   document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lightbox-img').src='';
 };
+// Also close on Escape key
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeLightbox(); });
 
 window.toggleInlineEdit=function(id){
   if(currentEditId&&currentEditId!==id){ const p=document.getElementById('editrow-'+currentEditId); if(p) p.style.display='none'; }
@@ -981,5 +998,16 @@ function showSavedBadge(){
 
 boot();
 </script>
+
+<!-- LIGHTBOX -->
+<div id="lightbox" onclick="closeLightbox()">
+  <button id="lightbox-close" onclick="closeLightbox()" title="Schließen (Esc)">✕</button>
+  <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()" style="transition:opacity .2s"/>
+  <div style="display:flex;align-items:center;gap:16px;margin-top:4px">
+    <div id="lightbox-caption" style="color:#fff;font-size:13px;opacity:.8"></div>
+    <a id="lightbox-download" href="#" download="foto.jpg" target="_blank" onclick="event.stopPropagation()"
+       style="color:#fff;font-size:12px;opacity:.6;text-decoration:none;border:1px solid rgba(255,255,255,.3);padding:4px 10px;border-radius:6px">⬇ Herunterladen</a>
+  </div>
+</div>
 </body>
 </html>
