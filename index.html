@@ -753,28 +753,7 @@ window.renderTable=function(){
 };
 
 // ── LIGHTBOX ──
-window.openLightboxEl=function(el){
-  const url=decodeURIComponent(el.getAttribute('data-url'));
-  const caption=el.getAttribute('data-caption');
-  const lb=document.getElementById('lightbox');
-  const img=document.getElementById('lightbox-img');
-  const cap=document.getElementById('lightbox-caption');
-  img.src=''; // reset first
-  img.onload=null;
-  cap.textContent=caption;
-  lb.classList.add('open');
-  // Show loading state
-  img.style.opacity='0.3';
-  img.onload=()=>{ img.style.opacity='1'; };
-  img.onerror=()=>{ cap.textContent=caption+' (Foto wird noch hochgeladen…)'; };
-  img.src=url;
-};
-window.closeLightbox=function(){
-  document.getElementById('lightbox').classList.remove('open');
-  document.getElementById('lightbox-img').src='';
-};
-// Also close on Escape key
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeLightbox(); });
+// Lightbox handled by inline script below
 
 window.toggleInlineEdit=function(id){
   if(currentEditId&&currentEditId!==id){ const p=document.getElementById('editrow-'+currentEditId); if(p) p.style.display='none'; }
@@ -1000,14 +979,41 @@ boot();
 </script>
 
 <!-- LIGHTBOX -->
-<div id="lightbox" onclick="closeLightbox()">
-  <button id="lightbox-close" onclick="closeLightbox()" title="Schließen (Esc)">✕</button>
-  <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()" style="transition:opacity .2s"/>
-  <div style="display:flex;align-items:center;gap:16px;margin-top:4px">
+<div id="lightbox" onclick="closeLightbox()" style="position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px">
+  <button onclick="closeLightbox()" style="position:absolute;top:20px;right:24px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:22px;cursor:pointer;width:40px;height:40px;border-radius:50%;line-height:1" title="Schließen">✕</button>
+  <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()" style="max-width:92vw;max-height:80vh;border-radius:10px;object-fit:contain;transition:opacity .2s"/>
+  <div style="display:flex;align-items:center;gap:16px">
     <div id="lightbox-caption" style="color:#fff;font-size:13px;opacity:.8"></div>
     <a id="lightbox-download" href="#" download="foto.jpg" target="_blank" onclick="event.stopPropagation()"
-       style="color:#fff;font-size:12px;opacity:.6;text-decoration:none;border:1px solid rgba(255,255,255,.3);padding:4px 10px;border-radius:6px">⬇ Herunterladen</a>
+       style="color:#fff;font-size:12px;opacity:.7;text-decoration:none;border:1px solid rgba(255,255,255,.4);padding:5px 12px;border-radius:6px">⬇ Speichern</a>
   </div>
 </div>
+
+<script>
+function openLightboxEl(el){
+  var url=decodeURIComponent(el.getAttribute('data-url'));
+  var caption=el.getAttribute('data-caption');
+  var lb=document.getElementById('lightbox');
+  var img=document.getElementById('lightbox-img');
+  var cap=document.getElementById('lightbox-caption');
+  var dl=document.getElementById('lightbox-download');
+  img.src='';
+  cap.textContent=caption;
+  if(dl){ dl.href=url; }
+  lb.style.display='flex';
+  img.style.opacity='0.3';
+  img.onload=function(){ img.style.opacity='1'; };
+  img.onerror=function(){ cap.textContent=caption+' — wird noch hochgeladen…'; };
+  img.src=url;
+}
+function closeLightbox(){
+  document.getElementById('lightbox').style.display='none';
+  document.getElementById('lightbox-img').src='';
+}
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape') closeLightbox();
+});
+</script>
+
 </body>
 </html>
