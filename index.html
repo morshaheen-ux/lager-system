@@ -789,14 +789,19 @@ window.deleteAll=async function(){
 
 // ── DRIVER SUBMIT ──
 window.driverSubmit=async function(){
+  console.log('Submit clicked, firma:', currentFirma);
   const name=document.getElementById('d-name').value.trim();
   const plate=document.getElementById('d-plate').value.trim();
   const car=document.getElementById('d-car').value.trim();
   const timein=document.getElementById('d-timein').value;
   const timeout=document.getElementById('d-timeout').value;
-  const date=document.getElementById('d-date').value;
+  const date=document.getElementById('d-date').value || todayLocal();
   const note=document.getElementById('d-note').value.trim();
-  if(!name||!plate||!timein||!date){ toast('Bitte alle Pflichtfelder (*) ausfüllen.','err'); return; }
+  // Validation with clear error messages
+  if(!name){ toast('Bitte Fahrername eingeben.','err'); document.getElementById('d-name').focus(); return; }
+  if(!plate){ toast('Bitte Kennzeichen eingeben.','err'); document.getElementById('d-plate').focus(); return; }
+  if(!timein){ toast('Bitte Einfahrtzeit eingeben.','err'); document.getElementById('d-timein').focus(); return; }
+  if(!currentFirma){ toast('Kein Firmenzugang. Bitte Link überprüfen.','err'); return; }
   // Photos are optional
 
   // Save record first to get ID
@@ -851,7 +856,7 @@ window.adminLogout=function(){ showPage('select'); };
 window.adminAdd=async function(){
   const name=document.getElementById('m-name').value.trim(),plate=document.getElementById('m-plate').value.trim(),car=document.getElementById('m-car').value.trim();
   const timein=document.getElementById('m-timein').value,timeout=document.getElementById('m-timeout').value,date=document.getElementById('m-date').value,note=document.getElementById('m-note').value.trim();
-  if(!name||!plate||!timein||!date){ toast('Pflichtfelder ausfüllen.','err'); return; }
+  if(!name||!plate||!timein){ toast('Pflichtfelder ausfüllen.','err'); return; }
   await saveRecord({name,plate,car,timein,timeout,date,note,ts:Date.now(),photoPlate:'',photoKmIn:'',photoKmOut:''});
   clearManualForm(); toast('Eintrag hinzugefügt!');
 };
