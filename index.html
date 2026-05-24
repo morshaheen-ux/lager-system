@@ -484,7 +484,7 @@ async function initFirebase(){
 
 // ── PHOTO → tiny base64 (stored in Realtime DB, no Storage needed) ──
 // Target: ~30-60KB per photo — very fast to save and load
-function compressToBase64(file, maxW=600, quality=0.55){
+function compressToBase64(file, maxW=400, quality=0.45){
   return new Promise(resolve=>{
     const img=new Image();
     const url=URL.createObjectURL(file);
@@ -495,7 +495,9 @@ function compressToBase64(file, maxW=600, quality=0.55){
       const canvas=document.createElement('canvas');
       canvas.width=w; canvas.height=h;
       canvas.getContext('2d').drawImage(img,0,0,w,h);
-      resolve(canvas.toDataURL('image/jpeg', quality));
+      const b64=canvas.toDataURL('image/jpeg', quality);
+      console.log(`Photo compressed: ${Math.round(b64.length/1024)}KB`);
+      resolve(b64);
       URL.revokeObjectURL(url);
     };
     img.src=url;
@@ -579,6 +581,7 @@ async function setCompanyPass(code, newPass){
 async function saveRecord(rec){
   const r=DB.push(DB.ref(DB.db,`firmen/${currentFirma}/eintraege`));
   await DB.set(r,rec);
+  console.log('Record saved with key:', r.key);
   return r.key;
 }
 async function updateRecord(id,data){
@@ -789,39 +792,54 @@ window.deleteAll=async function(){
 
 // ── DRIVER SUBMIT ──
 window.driverSubmit=async function(){
-  console.log('Submit clicked, firma:', currentFirma);
   const name=document.getElementById('d-name').value.trim();
   const plate=document.getElementById('d-plate').value.trim();
   const car=document.getElementById('d-car').value.trim();
   const timein=document.getElementById('d-timein').value;
   const timeout=document.getElementById('d-timeout').value;
-  const date=document.getElementById('d-date').value || todayLocal();
+  const date=document.getElementById('d-date').value||todayLocal();
   const note=document.getElementById('d-note').value.trim();
-  // Validation with clear error messages
+
+  // Validation
   if(!name){ toast('Bitte Fahrername eingeben.','err'); document.getElementById('d-name').focus(); return; }
   if(!plate){ toast('Bitte Kennzeichen eingeben.','err'); document.getElementById('d-plate').focus(); return; }
   if(!timein){ toast('Bitte Einfahrtzeit eingeben.','err'); document.getElementById('d-timein').focus(); return; }
   if(!currentFirma){ toast('Kein Firmenzugang. Bitte Link überprüfen.','err'); return; }
-  // Photos are optional
 
-  // Save record first to get ID
-  const btn=document.querySelector('.btn-primary');
-  if(btn){ btn.textContent='Fotos werden hochgeladen…'; btn.disabled=true; }
+  const btn=document.getElementById('driver-submit-btn');
+  if(btn) btn.disabled=true;
+  updateSubmitBtn('Wird gespeichert…');
+
   try{
-    const tempId=uid();
-    await uploadAllPhotos(tempId);
-    // Save driver info for next time
+    // Step 1: Compress photos locally if any (no network needed)
+    let photoPlate='', photoKmIn='', photoKmOut='';
+    const hasPhotos=Object.values(photoData).some(Boolean);
+    if(hasPhotos){
+      updateSubmitBtn('Fotos werden komprimiert…');
+      if(photoData.plate){ photoPlate=await compressToBase64(photoData.plate); }
+      if(photoData.kmin){  photoKmIn =await compressToBase64(photoData.kmin);  }
+      if(photoData.kmout){ photoKmOut=await compressToBase64(photoData.kmout); }
+    }
+
+    // Step 2: Save text entry first (always fast)
+    updateSubmitBtn('Eintrag wird gespeichert…');
     localStorage.setItem('lager_driver_'+currentFirma, JSON.stringify({name,plate,car}));
-    const rec={name,plate,car,timein,timeout,date,note,ts:Date.now(),photoPlate:photoUrls.plate||'',photoKmIn:photoUrls.kmin||'',photoKmOut:photoUrls.kmout||''};
+    const rec={name,plate,car,timein,timeout,date,note,ts:Date.now(),
+               photoPlate,photoKmIn,photoKmOut};
     await saveRecord(rec);
+
+    // Done!
     document.getElementById('driver-form-area').style.display='none';
-    document.getElementById('driver-success-msg').textContent=`${name} (${plate}) wurde erfolgreich erfasst.`;
+    document.getElementById('driver-success-msg').textContent=
+      `${name} (${plate}) wurde erfolgreich erfasst.`;
     document.getElementById('driver-success').style.display='block';
-    toast('Eintrag und Fotos gespeichert!');
+    toast('Eintrag gespeichert!');
   }catch(e){
-    toast('Fehler beim Speichern.','err'); console.error(e);
+    console.error('Submit error:',e);
+    toast('Fehler: '+(e.message||'Bitte erneut versuchen.'),'err');
   }finally{
-    if(btn){ btn.textContent='Einfahrt speichern'; btn.disabled=false; }
+    if(btn) btn.disabled=false;
+    updateSubmitBtn('Einfahrt speichern');
   }
 };
 
