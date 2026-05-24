@@ -111,6 +111,33 @@ tbody tr:hover{background:var(--surface2)}
 .company-actions{display:flex;gap:6px;flex-shrink:0}
 
 @media(max-width:600px){.main{padding:1rem}.topbar{padding:0 1rem}.form-grid,.form-grid.cols3{grid-template-columns:1fr}.stats-grid{grid-template-columns:1fr 1fr}.choice-grid{grid-template-columns:1fr}.edit-row-grid{grid-template-columns:1fr 1fr}}
+
+/* ── PHOTO UPLOAD ── */
+.photo-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:4px}
+.photo-slot{display:flex;flex-direction:column;gap:6px}
+.photo-slot label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
+.photo-upload-btn{position:relative;width:100%;aspect-ratio:4/3;border:2px dashed var(--border2);border-radius:var(--radius);background:var(--surface2);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;transition:border-color .15s,background .15s;overflow:hidden}
+.photo-upload-btn:hover{border-color:var(--text);background:var(--bg)}
+.photo-upload-btn input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.photo-upload-btn svg{width:24px;height:24px;color:var(--text3);pointer-events:none}
+.photo-upload-btn span{font-size:11px;color:var(--text3);pointer-events:none;text-align:center;padding:0 8px}
+.photo-preview{width:100%;aspect-ratio:4/3;border-radius:var(--radius);object-fit:cover;border:1px solid var(--border);display:none}
+.photo-clear{display:none;font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;padding:2px 0;font-family:var(--sans)}
+.photo-clear:hover{text-decoration:underline}
+.uploading-bar{height:3px;background:var(--green-bg);border-radius:2px;margin-top:4px;display:none}
+.uploading-bar-inner{height:100%;background:var(--green);border-radius:2px;animation:uploadPulse 1s infinite}
+@keyframes uploadPulse{0%{width:20%}50%{width:80%}100%{width:20%}}
+/* Admin photo thumbnails in table */
+.photo-thumb{width:48px;height:36px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;transition:transform .15s}
+.photo-thumb:hover{transform:scale(1.08)}
+.photo-thumbs{display:flex;gap:4px;align-items:center}
+/* Lightbox */
+#lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+#lightbox.open{display:flex}
+#lightbox img{max-width:90vw;max-height:80vh;border-radius:12px;object-fit:contain}
+#lightbox-caption{color:#fff;font-size:13px;opacity:.7}
+#lightbox-close{position:absolute;top:20px;right:24px;background:none;border:none;color:#fff;font-size:28px;cursor:pointer;line-height:1}
+@media(max-width:600px){.photo-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -163,21 +190,60 @@ tbody tr:hover{background:var(--surface2)}
     </div>
     <div id="driver-form-area">
       <div class="card">
-        <div class="card-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Fahrerinformationen</div>
+        <div class="card-header" style="justify-content:space-between"><div style="display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Fahrerinformationen</div><span id="saved-badge" style="display:none;font-size:11px;background:var(--green-bg);color:var(--green);border:1px solid #b7dfc2;padding:2px 10px;border-radius:99px;font-weight:500">✓ Gespeichert</span></div>
         <div class="form-grid">
           <div class="fg full"><label>Fahrername *</label><input type="text" id="d-name" placeholder="Vor- und Nachname"/></div>
           <div class="fg"><label>Kennzeichen *</label><input type="text" id="d-plate" placeholder="z. B. B-AB 1234" style="font-family:var(--mono)"/></div>
-          <div class="fg"><label>Fahrzeug / Marke *</label><input type="text" id="d-car" placeholder="z. B. VW Transporter"/></div>
+          <div class="fg"><label>Fahrzeug / Marke</label><input type="text" id="d-car" placeholder="z. B. VW Transporter"/></div>
         </div>
       </div>
       <div class="card">
         <div class="card-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Zeiten &amp; Datum</div>
         <div class="form-grid cols3">
-          <div class="fg"><label>Einfahrt ins Lager *</label><input type="datetime-local" id="d-timein"/></div>
-          <div class="fg"><label>Ausfahrt aus Lager</label><input type="datetime-local" id="d-timeout"/></div>
+          <div class="fg"><label>Einfahrt ins Lager *</label><input type="time" id="d-timein"/></div>
+          <div class="fg"><label>Ausfahrt aus Lager</label><input type="time" id="d-timeout"/></div>
           <div class="fg"><label>Datum *</label><input type="date" id="d-date"/></div>
           <div class="fg full"><label>Bemerkung (optional)</label><input type="text" id="d-note" placeholder="z. B. Lieferung Nr. 42"/></div>
         </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Fotos (optional)</div>
+        <div class="photo-grid">
+          <div class="photo-slot">
+            <label>📋 Kennzeichenfoto</label>
+            <div class="photo-upload-btn" id="slot-plate-btn">
+              <input type="file" accept="image/*" capture="environment" onchange="handlePhoto('plate',this)"/>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="6" rx="1"/><path d="M5 11V9a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2"/></svg>
+              <span>Foto aufnehmen oder auswählen</span>
+            </div>
+            <img id="preview-plate" class="photo-preview"/>
+            <button class="photo-clear" id="clear-plate" onclick="clearPhoto('plate')">✕ Entfernen</button>
+            <div class="uploading-bar" id="bar-plate"><div class="uploading-bar-inner"></div></div>
+          </div>
+          <div class="photo-slot">
+            <label>🔢 KM Einfahrt</label>
+            <div class="photo-upload-btn" id="slot-kmin-btn">
+              <input type="file" accept="image/*" capture="environment" onchange="handlePhoto('kmin',this)"/>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span>Tacho bei Einfahrt</span>
+            </div>
+            <img id="preview-kmin" class="photo-preview"/>
+            <button class="photo-clear" id="clear-kmin" onclick="clearPhoto('kmin')">✕ Entfernen</button>
+            <div class="uploading-bar" id="bar-kmin"><div class="uploading-bar-inner"></div></div>
+          </div>
+          <div class="photo-slot">
+            <label>🔢 KM Ausfahrt</label>
+            <div class="photo-upload-btn" id="slot-kmout-btn">
+              <input type="file" accept="image/*" capture="environment" onchange="handlePhoto('kmout',this)"/>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span>Tacho bei Ausfahrt</span>
+            </div>
+            <img id="preview-kmout" class="photo-preview"/>
+            <button class="photo-clear" id="clear-kmout" onclick="clearPhoto('kmout')">✕ Entfernen</button>
+            <div class="uploading-bar" id="bar-kmout"><div class="uploading-bar-inner"></div></div>
+          </div>
+        </div>
+        <div id="photo-status" style="margin-top:10px;font-size:12px;color:var(--text3)">0 / 3 Fotos hochgeladen</div>
       </div>
       <div class="btn-row">
         <button class="btn btn-primary" onclick="driverSubmit()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Einfahrt speichern</button>
@@ -256,9 +322,9 @@ tbody tr:hover{background:var(--surface2)}
         <div class="form-grid cols3">
           <div class="fg"><label>Fahrername *</label><input type="text" id="m-name" placeholder="Name"/></div>
           <div class="fg"><label>Kennzeichen *</label><input type="text" id="m-plate" placeholder="B-AB 1234" style="font-family:var(--mono)"/></div>
-          <div class="fg"><label>Fahrzeug *</label><input type="text" id="m-car" placeholder="Marke / Typ"/></div>
-          <div class="fg"><label>Einfahrt *</label><input type="datetime-local" id="m-timein"/></div>
-          <div class="fg"><label>Ausfahrt</label><input type="datetime-local" id="m-timeout"/></div>
+          <div class="fg"><label>Fahrzeug</label><input type="text" id="m-car" placeholder="Marke / Typ"/></div>
+          <div class="fg"><label>Einfahrt *</label><input type="time" id="m-timein"/></div>
+          <div class="fg"><label>Ausfahrt</label><input type="time" id="m-timeout"/></div>
           <div class="fg"><label>Datum *</label><input type="date" id="m-date"/></div>
           <div class="fg full"><label>Bemerkung</label><input type="text" id="m-note" placeholder="Optional"/></div>
         </div>
@@ -368,22 +434,26 @@ const FIREBASE_CONFIG = {
   measurementId: "G-EWX6R21S7W"
 };
 
-const SUPER_ADMIN_PASS = 'superadmin123'; // Change this!
+const SUPER_ADMIN_PASS = 'superadmin123';
 
-// ── STATE ──
 let records = {};
-let companies = {};        // loaded from Firebase
+let companies = {};
 let currentFirma = null;
 let currentFirmaName = null;
-let DB = null;             // firebase db functions
+let DB = null;
+let STORAGE = null;
 let sortCol = 'ts', sortDir = -1;
 let currentEditId = null;
 
+// Photo state
+const photoData = { plate: null, kmin: null, kmout: null };
+const photoUrls = { plate: null, kmin: null, kmout: null };
+
 // ── HELPERS ──
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
-function nowLocal(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; }
+function nowLocal(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${p(d.getHours())}:${p(d.getMinutes())}`; }
 function todayLocal(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
-function fmtDT(v){ if(!v)return '—'; return new Date(v).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function fmtDT(v){ if(!v)return '—'; return v; }
 function fmtDate(v){ if(!v)return '—'; const[y,m,d]=v.split('-'); return `${d}.${m}.${y}`; }
 function getBaseUrl(){ return window.location.href.split('?')[0]; }
 function getDriverLink(code){ return `${getBaseUrl()}?firma=${code}`; }
@@ -394,7 +464,7 @@ function toast(msg,type='ok'){
   const t=document.createElement('div');
   t.className=`toast ${type}`;
   t.textContent=msg;
-  c.appendChild(t); setTimeout(()=>t.remove(),3000);
+  c.appendChild(t); setTimeout(()=>t.remove(),3500);
 }
 
 function getParams(){
@@ -406,18 +476,107 @@ function getParams(){
 async function initFirebase(){
   const{initializeApp}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
   const{getDatabase,ref,onValue,push,set,remove,update,get}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+  const{getStorage,ref:sRef,uploadBytes,getDownloadURL}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js');
   const app=initializeApp(FIREBASE_CONFIG);
   const db=getDatabase(app);
+  const storage=getStorage(app);
   DB={ref,onValue,push,set,remove,update,get,db};
-  return DB;
+  STORAGE={sRef,uploadBytes,getDownloadURL,storage};
 }
 
-// ── COMPANY PASSWORD from Firebase ──
+// ── PHOTO UPLOAD to Firebase Storage ──
+async function uploadPhoto(file, path){
+  const storageRef = STORAGE.sRef(STORAGE.storage, path);
+  const snap = await STORAGE.uploadBytes(storageRef, file);
+  return await STORAGE.getDownloadURL(snap.ref);
+}
+
+// Compress image before upload (max 1200px, 80% quality)
+function compressImage(file){
+  return new Promise(resolve=>{
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      const maxW=1200;
+      let w=img.width, h=img.height;
+      if(w>maxW){ h=Math.round(h*maxW/w); w=maxW; }
+      const canvas=document.createElement('canvas');
+      canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      canvas.toBlob(blob=>resolve(blob),'image/jpeg',0.82);
+      URL.revokeObjectURL(url);
+    };
+    img.src=url;
+  });
+}
+
+window.handlePhoto=function(key, input){
+  const file=input.files[0];
+  if(!file) return;
+  // Show preview immediately
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const preview=document.getElementById('preview-'+key);
+    const btn=document.getElementById('slot-'+key+'-btn');
+    const clearBtn=document.getElementById('clear-'+key);
+    preview.src=e.target.result;
+    preview.style.display='block';
+    btn.style.display='none';
+    clearBtn.style.display='block';
+    photoData[key]=file;
+    updatePhotoStatus();
+  };
+  reader.readAsDataURL(file);
+};
+
+window.clearPhoto=function(key){
+  const preview=document.getElementById('preview-'+key);
+  const btn=document.getElementById('slot-'+key+'-btn');
+  const clearBtn=document.getElementById('clear-'+key);
+  preview.src=''; preview.style.display='none';
+  btn.style.display='flex'; clearBtn.style.display='none';
+  photoData[key]=null; photoUrls[key]=null;
+  // Reset file input
+  const input=btn.querySelector('input');
+  if(input) input.value='';
+  updatePhotoStatus();
+};
+
+function updatePhotoStatus(){
+  const count=Object.values(photoData).filter(Boolean).length;
+  const el=document.getElementById('photo-status');
+  if(el){
+    el.textContent=`${count} / 3 Fotos ausgewählt (optional)`;
+    el.style.color=count===3?'var(--green)':'var(--text3)';
+  }
+}
+
+async function uploadAllPhotos(recordId){
+  const keys=['plate','kmin','kmout'];
+  const labels=['Kennzeichen','KM-Einfahrt','KM-Ausfahrt'];
+  for(let i=0;i<keys.length;i++){
+    const key=keys[i];
+    if(!photoData[key]) continue;
+    const bar=document.getElementById('bar-'+key);
+    if(bar) bar.style.display='block';
+    try{
+      const compressed=await compressImage(photoData[key]);
+      const path=`firmen/${currentFirma}/${recordId}/${key}.jpg`;
+      const url=await uploadPhoto(compressed, path);
+      photoUrls[key]=url;
+    }catch(e){
+      console.error('Upload failed:',key,e);
+      toast(`Foto ${labels[i]} konnte nicht hochgeladen werden.`,'err');
+    }
+    if(bar) bar.style.display='none';
+  }
+}
+
+// ── COMPANY OPS ──
 async function getCompanyPass(code){
   const snap=await DB.get(DB.ref(DB.db,`lager-companies/${code}/pass`));
   return snap.val() || 'admin123';
 }
-
 async function setCompanyPass(code, newPass){
   await DB.set(DB.ref(DB.db,`lager-companies/${code}/pass`), newPass);
 }
@@ -436,14 +595,12 @@ async function deleteRecord(id){
   await DB.remove(DB.ref(DB.db,`firmen/${currentFirma}/eintraege/${id}`));
   renderTable(); updateStats();
 }
-
 function subscribeToFirma(code){
   DB.onValue(DB.ref(DB.db,`firmen/${code}/eintraege`),snap=>{
     records=snap.val()||{};
     renderTable(); updateStats();
   });
 }
-
 function subscribeToCompanies(){
   DB.onValue(DB.ref(DB.db,'lager-companies'),snap=>{
     companies=snap.val()||{};
@@ -453,27 +610,15 @@ function subscribeToCompanies(){
 
 // ── BOOT ──
 async function boot(){
-  try{
-    await initFirebase();
-  }catch(e){
-    toast('Firebase Verbindungsfehler!','err');
-    console.error(e); return;
-  }
-
+  try{ await initFirebase(); }
+  catch(e){ toast('Firebase Verbindungsfehler!','err'); console.error(e); return; }
   const p=getParams();
-
-  if(p.superadmin==='1'){
-    subscribeToCompanies();
-    showPage('superadmin'); return;
-  }
-
+  if(p.superadmin==='1'){ subscribeToCompanies(); showPage('superadmin'); return; }
   if(p.firma){
     currentFirma=p.firma;
-    // Load company name from Firebase
     const snap=await DB.get(DB.ref(DB.db,`lager-companies/${p.firma}`));
     const compData=snap.val();
     currentFirmaName=compData?.name || p.firma;
-
     document.getElementById('select-title').textContent=currentFirmaName;
     document.getElementById('select-sub').textContent='Lagerverwaltung — '+p.firma;
     document.getElementById('select-admin-tag').textContent='Firmen-Admin';
@@ -481,10 +626,8 @@ async function boot(){
     document.getElementById('admin-login-sub').textContent=currentFirmaName;
     document.getElementById('login-title').textContent=currentFirmaName+' — Admin';
     document.getElementById('login-company-label').textContent='Bitte Admin-Passwort eingeben';
-
     showPage('select');
   } else {
-    // No firma — show super admin button
     document.getElementById('select-choices').innerHTML+=`
       <div class="choice-card" onclick="goSuperAdmin()" style="grid-column:1/-1;opacity:.7">
         <div class="choice-icon" style="background:var(--blue-bg);border-color:#b5cef5"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
@@ -506,11 +649,21 @@ window.goSuperAdmin=function(){
 window.showPage=function(p){
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
-  if(p==='driver'){ document.getElementById('d-timein').value=nowLocal(); document.getElementById('d-date').value=todayLocal(); document.getElementById('driver-success').style.display='none'; document.getElementById('driver-form-area').style.display='block'; }
+  if(p==='driver'){
+    document.getElementById('d-timein').value=nowLocal();
+    document.getElementById('d-date').value=todayLocal();
+    document.getElementById('driver-success').style.display='none';
+    document.getElementById('driver-form-area').style.display='block';
+    // Auto-fill from last entry
+    const saved=JSON.parse(localStorage.getItem('lager_driver_'+currentFirma)||'{}');
+    if(saved.name) document.getElementById('d-name').value=saved.name;
+    if(saved.plate) document.getElementById('d-plate').value=saved.plate;
+    if(saved.car) document.getElementById('d-car').value=saved.car;
+    if(saved.name||saved.plate) showSavedBadge();
+  }
   if(p==='admin'){ document.getElementById('m-timein').value=nowLocal(); document.getElementById('m-date').value=todayLocal(); updateAdminUI(); }
   if(p==='admin-login'){ document.getElementById('a-pass').value=''; document.getElementById('login-err').style.display='none'; }
 };
-
 function updateAdminUI(){
   document.getElementById('admin-topbar-title').textContent=(currentFirmaName||'Admin')+' — Dashboard';
   document.getElementById('info-company').textContent=currentFirmaName||'—';
@@ -518,7 +671,6 @@ function updateAdminUI(){
   renderTable(); updateStats();
 }
 
-// ── TABS ──
 window.switchTab=function(tab){
   ['table','add','settings'].forEach(t=>{
     document.getElementById('tab-content-'+t).style.display=t===tab?'block':'none';
@@ -526,7 +678,6 @@ window.switchTab=function(tab){
   });
 };
 
-// ── STATS ──
 function updateStats(){
   const total=Object.keys(records).length;
   const inside=Object.values(records).filter(r=>!r.timeout).length;
@@ -542,7 +693,6 @@ function updateStats(){
     <div class="stat-card"><div class="stat-val">${todayCnt}</div><div class="stat-lbl">Heute</div></div>`;
 }
 
-// ── TABLE ──
 window.sortBy=function(col){
   if(sortCol===col) sortDir*=-1; else{ sortCol=col; sortDir=1; }
   ['name','plate','car','timein','timeout','date'].forEach(c=>{ const el=document.getElementById('arrow-'+c); if(el){ el.textContent='↕'; el.closest('th').classList.remove('sorted'); } });
@@ -566,6 +716,12 @@ window.renderTable=function(){
   const wrap=document.getElementById('tbl-wrap');
   if(!arr.length){ wrap.style.display='none'; empty.style.display='block'; return; }
   wrap.style.display='block'; empty.style.display='none';
+
+  function thumbHtml(url, caption){
+    if(!url) return '<span style="color:var(--text3);font-size:11px">—</span>';
+    return `<img class="photo-thumb" src="${url}" onclick="openLightbox('${url}','${caption}')" title="${caption}"/>`;
+  }
+
   tbody.innerHTML=arr.map(r=>`
     <tr id="row-${r.id}">
       <td style="font-weight:600">${r.name}</td>
@@ -574,6 +730,13 @@ window.renderTable=function(){
       <td class="td-time">${fmtDT(r.timein)}</td>
       <td class="td-time">${r.timeout?fmtDT(r.timeout):'<span style="color:var(--text3)">—</span>'}</td>
       <td style="color:var(--text2);font-size:13px">${fmtDate(r.date)}</td>
+      <td>
+        <div class="photo-thumbs">
+          ${thumbHtml(r.photoPlate,'Kennzeichen')}
+          ${thumbHtml(r.photoKmIn,'KM Einfahrt')}
+          ${thumbHtml(r.photoKmOut,'KM Ausfahrt')}
+        </div>
+      </td>
       <td><span class="badge ${r.timeout?'badge-out':'badge-pending'}">${r.timeout?'Ausgefahren':'Im Lager'}</span></td>
       <td class="td-actions">
         <button class="btn btn-sm btn-icon" onclick="toggleInlineEdit('${r.id}')" title="Bearbeiten"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
@@ -581,14 +744,14 @@ window.renderTable=function(){
       </td>
     </tr>
     <tr id="editrow-${r.id}" style="display:none">
-      <td colspan="8" style="padding:0">
+      <td colspan="9" style="padding:0">
         <div style="padding:14px 16px;background:#fafaf8;border-bottom:1px solid var(--border)">
           <div class="edit-row-grid">
             <div class="fg"><label>Fahrername</label><input type="text" id="er-name-${r.id}" value="${r.name}"/></div>
             <div class="fg"><label>Kennzeichen</label><input type="text" id="er-plate-${r.id}" value="${r.plate}" style="font-family:var(--mono)"/></div>
             <div class="fg"><label>Fahrzeug</label><input type="text" id="er-car-${r.id}" value="${r.car}"/></div>
-            <div class="fg"><label>Einfahrt</label><input type="datetime-local" id="er-timein-${r.id}" value="${r.timein}"/></div>
-            <div class="fg"><label>Ausfahrt</label><input type="datetime-local" id="er-timeout-${r.id}" value="${r.timeout||''}"/></div>
+            <div class="fg"><label>Einfahrt</label><input type="time" id="er-timein-${r.id}" value="${r.timein}"/></div>
+            <div class="fg"><label>Ausfahrt</label><input type="time" id="er-timeout-${r.id}" value="${r.timeout||''}"/></div>
             <div class="fg"><label>Bemerkung</label><input type="text" id="er-note-${r.id}" value="${r.note||''}"/></div>
           </div>
           <div class="edit-row-actions">
@@ -600,6 +763,16 @@ window.renderTable=function(){
     </tr>`).join('');
 };
 
+// ── LIGHTBOX ──
+window.openLightbox=function(url, caption){
+  document.getElementById('lightbox-img').src=url;
+  document.getElementById('lightbox-caption').textContent=caption;
+  document.getElementById('lightbox').classList.add('open');
+};
+window.closeLightbox=function(){
+  document.getElementById('lightbox').classList.remove('open');
+};
+
 window.toggleInlineEdit=function(id){
   if(currentEditId&&currentEditId!==id){ const p=document.getElementById('editrow-'+currentEditId); if(p) p.style.display='none'; }
   const row=document.getElementById('editrow-'+id);
@@ -609,7 +782,7 @@ window.toggleInlineEdit=function(id){
 };
 window.saveInlineEdit=async function(id){
   const data={name:document.getElementById('er-name-'+id).value.trim(),plate:document.getElementById('er-plate-'+id).value.trim(),car:document.getElementById('er-car-'+id).value.trim(),timein:document.getElementById('er-timein-'+id).value,timeout:document.getElementById('er-timeout-'+id).value,note:document.getElementById('er-note-'+id).value.trim()};
-  if(!data.name||!data.plate||!data.car){ toast('Pflichtfelder fehlen.','err'); return; }
+  if(!data.name||!data.plate){ toast('Pflichtfelder fehlen.','err'); return; }
   await updateRecord(id,data); currentEditId=null; toast('Eintrag aktualisiert.');
 };
 window.delRecord=async function(id){ if(!confirm('Eintrag wirklich löschen?')) return; await deleteRecord(id); toast('Eintrag gelöscht.'); };
@@ -620,7 +793,7 @@ window.deleteAll=async function(){
   records={}; renderTable(); updateStats(); toast('Alle Einträge gelöscht.');
 };
 
-// ── DRIVER FORM ──
+// ── DRIVER SUBMIT ──
 window.driverSubmit=async function(){
   const name=document.getElementById('d-name').value.trim();
   const plate=document.getElementById('d-plate').value.trim();
@@ -629,16 +802,40 @@ window.driverSubmit=async function(){
   const timeout=document.getElementById('d-timeout').value;
   const date=document.getElementById('d-date').value;
   const note=document.getElementById('d-note').value.trim();
-  if(!name||!plate||!car||!timein||!date){ toast('Bitte alle Pflichtfelder (*) ausfüllen.','err'); return; }
+  if(!name||!plate||!timein||!date){ toast('Bitte alle Pflichtfelder (*) ausfüllen.','err'); return; }
+  // Photos are optional
+
+  // Save record first to get ID
+  const btn=document.querySelector('.btn-primary');
+  if(btn){ btn.textContent='Fotos werden hochgeladen…'; btn.disabled=true; }
   try{
-    await saveRecord({name,plate,car,timein,timeout,date,note,ts:Date.now()});
+    const tempId=uid();
+    await uploadAllPhotos(tempId);
+    // Save driver info for next time
+    localStorage.setItem('lager_driver_'+currentFirma, JSON.stringify({name,plate,car}));
+    const rec={name,plate,car,timein,timeout,date,note,ts:Date.now(),photoPlate:photoUrls.plate||'',photoKmIn:photoUrls.kmin||'',photoKmOut:photoUrls.kmout||''};
+    await saveRecord(rec);
     document.getElementById('driver-form-area').style.display='none';
     document.getElementById('driver-success-msg').textContent=`${name} (${plate}) wurde erfolgreich erfasst.`;
     document.getElementById('driver-success').style.display='block';
-    toast('Eintrag gespeichert!');
-  }catch(e){ toast('Fehler beim Speichern. Bitte erneut versuchen.','err'); console.error(e); }
+    toast('Eintrag und Fotos gespeichert!');
+  }catch(e){
+    toast('Fehler beim Speichern.','err'); console.error(e);
+  }finally{
+    if(btn){ btn.textContent='Einfahrt speichern'; btn.disabled=false; }
+  }
 };
-window.clearDriverForm=function(){ ['d-name','d-plate','d-car','d-note'].forEach(id=>document.getElementById(id).value=''); document.getElementById('d-timein').value=nowLocal(); document.getElementById('d-timeout').value=''; document.getElementById('d-date').value=todayLocal(); };
+
+window.clearDriverForm=function(){
+  ['d-name','d-plate','d-car','d-note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('d-timein').value=nowLocal();
+  document.getElementById('d-timeout').value='';
+  document.getElementById('d-date').value=todayLocal();
+  ['plate','kmin','kmout'].forEach(k=>clearPhoto(k));
+  localStorage.removeItem('lager_driver_'+currentFirma);
+  const badge=document.getElementById('saved-badge');
+  if(badge) badge.style.display='none';
+};
 window.resetDriverForm=function(){ clearDriverForm(); document.getElementById('driver-success').style.display='none'; document.getElementById('driver-form-area').style.display='block'; };
 
 // ── ADMIN LOGIN ──
@@ -660,13 +857,13 @@ window.adminLogout=function(){ showPage('select'); };
 window.adminAdd=async function(){
   const name=document.getElementById('m-name').value.trim(),plate=document.getElementById('m-plate').value.trim(),car=document.getElementById('m-car').value.trim();
   const timein=document.getElementById('m-timein').value,timeout=document.getElementById('m-timeout').value,date=document.getElementById('m-date').value,note=document.getElementById('m-note').value.trim();
-  if(!name||!plate||!car||!timein||!date){ toast('Pflichtfelder ausfüllen.','err'); return; }
-  await saveRecord({name,plate,car,timein,timeout,date,note,ts:Date.now()});
+  if(!name||!plate||!timein||!date){ toast('Pflichtfelder ausfüllen.','err'); return; }
+  await saveRecord({name,plate,car,timein,timeout,date,note,ts:Date.now(),photoPlate:'',photoKmIn:'',photoKmOut:''});
   clearManualForm(); toast('Eintrag hinzugefügt!');
 };
 window.clearManualForm=function(){ ['m-name','m-plate','m-car','m-note'].forEach(id=>document.getElementById(id).value=''); document.getElementById('m-timein').value=nowLocal(); document.getElementById('m-timeout').value=''; document.getElementById('m-date').value=todayLocal(); };
 
-// ── PASSWORD CHANGE (stored in Firebase) ──
+// ── PASSWORD ──
 window.checkPwStrength=function(){
   const pw=document.getElementById('pw-new').value;
   const bar=document.getElementById('pw-strength-bar'),lbl=document.getElementById('pw-strength-label');
@@ -676,16 +873,14 @@ window.checkPwStrength=function(){
   const[w,c,t]=levels[s]||levels[0]; bar.style.width=w; bar.style.background=c; lbl.textContent=t; lbl.style.color=c;
 };
 window.changePassword=async function(){
-  const cur=document.getElementById('pw-current').value;
-  const nw=document.getElementById('pw-new').value;
-  const conf=document.getElementById('pw-confirm').value;
+  const cur=document.getElementById('pw-current').value,nw=document.getElementById('pw-new').value,conf=document.getElementById('pw-confirm').value;
   const msg=document.getElementById('pw-msg');
   const show=(txt,ok)=>{ msg.style.display='block'; msg.textContent=txt; msg.style.background=ok?'var(--green-bg)':'var(--red-bg)'; msg.style.color=ok?'var(--green)':'var(--red)'; msg.style.border=`1px solid ${ok?'#b7dfc2':'#f5c6c6'}`; };
   const correct=await getCompanyPass(currentFirma);
   if(cur!==correct){ show('Aktuelles Passwort ist falsch.',false); return; }
   if(nw.length<6){ show('Mindestens 6 Zeichen.',false); return; }
   if(nw!==conf){ show('Passwörter stimmen nicht überein.',false); return; }
-  await setCompanyPass(currentFirma, nw);
+  await setCompanyPass(currentFirma,nw);
   clearPwForm(); show('Passwort erfolgreich geändert!',true); toast('Passwort geändert!');
 };
 window.clearPwForm=function(){ ['pw-current','pw-new','pw-confirm'].forEach(id=>document.getElementById(id).value=''); document.getElementById('pw-strength-bar').style.width='0%'; document.getElementById('pw-strength-label').textContent=''; document.getElementById('pw-msg').style.display='none'; };
@@ -695,8 +890,8 @@ window.copyDriverLink=function(){ const link=getDriverLink(currentFirma); naviga
 window.exportCSV=function(){
   const arr=Object.entries(records).map(([id,r])=>({id,...r}));
   if(!arr.length){ toast('Keine Daten.','err'); return; }
-  const hdr='ID,Fahrername,Kennzeichen,Fahrzeug,Einfahrt,Ausfahrt,Datum,Bemerkung\n';
-  const rows=arr.map(r=>[r.id,r.name,r.plate,r.car,fmtDT(r.timein),r.timeout?fmtDT(r.timeout):'Im Lager',fmtDate(r.date),r.note||''].map(v=>`"${v}"`).join(',')).join('\n');
+  const hdr='ID,Fahrername,Kennzeichen,Fahrzeug,Einfahrt,Ausfahrt,Datum,Bemerkung,Foto Kennzeichen,Foto KM-ein,Foto KM-aus\n';
+  const rows=arr.map(r=>[r.id,r.name,r.plate,r.car,fmtDT(r.timein),r.timeout?fmtDT(r.timeout):'Im Lager',fmtDate(r.date),r.note||'',r.photoPlate||'',r.photoKmIn||'',r.photoKmOut||''].map(v=>`"${v}"`).join(',')).join('\n');
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([hdr+rows],{type:'text/csv;charset=utf-8;'})); a.download=`lager-${currentFirma}-${todayLocal()}.csv`; a.click(); toast('CSV heruntergeladen.');
 };
 
@@ -706,27 +901,22 @@ window.autoSlug=function(){
   const slug=name.toLowerCase().replace(/[äöü]/g,c=>({ä:'ae',ö:'oe',ü:'ue'}[c]||c)).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
   document.getElementById('sa-code').value=slug;
 };
-
 window.addCompany=async function(){
   const name=document.getElementById('sa-name').value.trim();
   const code=document.getElementById('sa-code').value.trim().toLowerCase().replace(/\s+/g,'-');
   const pass=document.getElementById('sa-pass').value;
   if(!name||!code||!pass){ toast('Alle Felder ausfüllen.','err'); return; }
-  // Check if already exists
   const snap=await DB.get(DB.ref(DB.db,`lager-companies/${code}`));
   if(snap.val()){ toast('Firma-Code existiert bereits.','err'); return; }
-  // Save company to Firebase with password
   await DB.set(DB.ref(DB.db,`lager-companies/${code}`),{name,pass,created:Date.now()});
   document.getElementById('sa-name').value=''; document.getElementById('sa-code').value=''; document.getElementById('sa-pass').value='';
   toast(`Firma "${name}" erstellt!`);
 };
-
 window.deleteCompany=async function(code){
-  if(!confirm(`Firma wirklich löschen?`)) return;
+  if(!confirm('Firma wirklich löschen?')) return;
   await DB.remove(DB.ref(DB.db,`lager-companies/${code}`));
   toast('Firma gelöscht.');
 };
-
 window.copyLink=function(link){ navigator.clipboard.writeText(link).then(()=>toast('Link kopiert!')).catch(()=>{ prompt('Link:',link); }); };
 
 function renderSAList(){
@@ -734,31 +924,34 @@ function renderSAList(){
   const entries=Object.entries(companies);
   if(!entries.length){ list.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="width:32px;height:32px;opacity:.4;display:block;margin:0 auto 8px"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>Noch keine Firmen erstellt</div>'; return; }
   list.innerHTML=entries.map(([code,c])=>{
-    const driverLink=getDriverLink(code);
-    const adminLink=getAdminLink(code);
+    const link=getDriverLink(code);
     return `<div class="company-row">
       <div class="company-avatar">${code.slice(0,3).toUpperCase()}</div>
       <div class="company-info">
         <div class="company-name">${c.name}</div>
         <div class="company-code">${code}</div>
-        <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
+        <div style="margin-top:6px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
           <div>
-            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Fahrer-Link</div>
-            <span class="company-link" onclick="copyLink('${driverLink}')">${driverLink}</span>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Link (Fahrer &amp; Admin)</div>
+            <span class="company-link" onclick="copyLink('${link}')">${link}</span>
           </div>
           <div>
-            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Passwort für Admin</div>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Admin Passwort</div>
             <span style="font-family:var(--mono);font-size:12px;background:var(--amber-bg);color:var(--amber);padding:3px 8px;border-radius:6px;border:1px solid #f5d888">${c.pass}</span>
           </div>
         </div>
       </div>
       <div class="company-actions">
-        <button class="btn btn-sm" onclick="copyLink('${driverLink}')">Fahrer</button>
-
+        <button class="btn btn-sm" onclick="copyLink('${link}')">Link kopieren</button>
         <button class="btn btn-sm btn-danger" onclick="deleteCompany('${code}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
       </div>
     </div>`;
   }).join('');
+}
+
+function showSavedBadge(){
+  const badge=document.getElementById('saved-badge');
+  if(badge) badge.style.display='inline-block';
 }
 
 boot();
