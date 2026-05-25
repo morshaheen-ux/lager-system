@@ -692,30 +692,18 @@ window.renderTable=function(){
   wrap.style.display='block'; empty.style.display='none';
 
   function thumbHtml(url, caption, uploading){
-    if(!url && uploading) return `<span style="color:var(--amber);font-size:10px;background:var(--amber-bg);padding:2px 6px;border-radius:4px">⏳</span>`;
-    if(!url) return `<span style="color:var(--text3);font-size:11px">—</span>`;
-    const id='thumb-'+Math.random().toString(36).slice(2,8);
-    const safe=encodeURIComponent(url);
-    // Use setTimeout to load image after DOM is ready
-    setTimeout(()=>{
-      const el=document.getElementById(id);
-      if(!el) return;
-      const img=new Image();
-      img.onload=()=>{
-        el.src=img.src;
-        el.style.display='block';
-        el.parentElement.querySelector('.thumb-loading')&&(el.parentElement.querySelector('.thumb-loading').style.display='none');
-      };
-      img.onerror=()=>{
-        el.parentElement.innerHTML='<span style="color:var(--red);font-size:10px" title="Foto fehler">⚠</span>';
-      };
-      img.src=url;
-    },100);
-    return `<span class="thumb-wrap" style="position:relative;display:inline-block">
-      <span class="thumb-loading" style="font-size:10px;color:var(--text3)">⏳</span>
-      <img id="${id}" class="photo-thumb" src="" data-url="${safe}" data-caption="${caption}"
-        onclick="openLightboxEl(this)" title="${caption}" style="display:none"/>
-    </span>`;
+    if(!url && uploading) return '<span style="font-size:10px;color:var(--amber)">⏳</span>';
+    if(!url) return '<span style="font-size:11px;color:var(--text3)">—</span>';
+    // Store full URL in data-url, use it directly as src
+    return '<img class="photo-thumb" '
+      + 'src="' + url + '" '
+      + 'data-url="' + encodeURIComponent(url) + '" '
+      + 'data-caption="' + caption + '" '
+      + 'onclick="openLightboxEl(this)" '
+      + 'title="' + caption + '" '
+      + 'style="width:48px;height:36px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" '
+      + 'onerror="this.outerHTML='<span style=&quot;font-size:10px;color:var(--red)&quot;>⚠</span>'"'
+      + '/>';
   }
 
   tbody.innerHTML=arr.map(r=>`
