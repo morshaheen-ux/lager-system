@@ -692,30 +692,13 @@ window.renderTable=function(){
   wrap.style.display='block'; empty.style.display='none';
 
   function thumbHtml(url, caption, uploading){
-    if(!url && uploading) return `<span style="color:var(--amber);font-size:10px;background:var(--amber-bg);padding:2px 6px;border-radius:4px">⏳</span>`;
-    if(!url) return `<span style="color:var(--text3);font-size:11px">—</span>`;
-    const id='thumb-'+Math.random().toString(36).slice(2,8);
-    const safe=encodeURIComponent(url);
-    // Use setTimeout to load image after DOM is ready
-    setTimeout(()=>{
-      const el=document.getElementById(id);
-      if(!el) return;
-      const img=new Image();
-      img.onload=()=>{
-        el.src=img.src;
-        el.style.display='block';
-        el.parentElement.querySelector('.thumb-loading')&&(el.parentElement.querySelector('.thumb-loading').style.display='none');
-      };
-      img.onerror=()=>{
-        el.parentElement.innerHTML='<span style="color:var(--red);font-size:10px" title="Foto fehler">⚠</span>';
-      };
-      img.src=url;
-    },100);
-    return `<span class="thumb-wrap" style="position:relative;display:inline-block">
-      <span class="thumb-loading" style="font-size:10px;color:var(--text3)">⏳</span>
-      <img id="${id}" class="photo-thumb" src="" data-url="${safe}" data-caption="${caption}"
-        onclick="openLightboxEl(this)" title="${caption}" style="display:none"/>
-    </span>`;
+    if(!url && uploading) return '<span style="font-size:10px;color:#b45309">⏳</span>';
+    if(!url) return '<span style="font-size:11px;color:#999">—</span>';
+    // Register in global map — safe approach, no innerHTML injection
+    if(!window.__photos) window.__photos={};
+    const pid='ph'+(++window.__photoIdx);
+    window.__photos[pid]={url:url,caption:caption};
+    return '<span id="'+pid+'" style="display:inline-block;width:48px;height:36px;border-radius:6px;background:#eee;font-size:10px;line-height:36px;text-align:center;cursor:pointer;border:1px solid #ddd" onclick="window.__openPhoto(''+pid+'')">⏳</span>';
   }
 
   tbody.innerHTML=arr.map(r=>`
@@ -1017,6 +1000,43 @@ boot();
 
 <script>
 var _lbUrl = '';
+
+// Called from thumbnails using global photo registry
+window.__openPhoto = function(pid){
+  var p = window.__photos && window.__photos[pid];
+  if(!p){ alert('Foto nicht gefunden'); return; }
+  // Load image into the span as actual img
+  var span = document.getElementById(pid);
+  if(span && !span.querySelector('img')){
+    var tImg = document.createElement('img');
+    tImg.style.cssText = 'width:48px;height:36px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid #ddd;display:block';
+    tImg.src = p.url;
+    tImg.onclick = function(){ window.__openLb(p.url, p.caption); };
+    span.innerHTML='';
+    span.style.background='transparent';
+    span.style.border='none';
+    span.onclick=null;
+    span.appendChild(tImg);
+  } else {
+    window.__openLb(p.url, p.caption);
+  }
+};
+
+window.__openLb = function(url, caption){
+  _lbUrl = url;
+  var lb  = document.getElementById('lightbox');
+  var img = document.getElementById('lb-img');
+  var cap = document.getElementById('lb-cap');
+  img.src = '';
+  cap.textContent = '⏳ ' + caption + ' lädt…';
+  lb.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  img.onload  = function(){ cap.textContent = caption; };
+  img.onerror = function(){
+    cap.innerHTML = caption + ' — <a href="'+url+'" target="_blank" style="color:#fff;text-decoration:underline">Direkt öffnen ↗</a>';
+  };
+  img.src = url;
+};
 
 function openLightboxEl(el){
   _lbUrl = decodeURIComponent(el.getAttribute('data-url'));
