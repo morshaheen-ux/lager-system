@@ -675,6 +675,29 @@ window.sortBy=function(col){
   renderTable();
 };
 
+function loadThumbnails(){
+  requestAnimationFrame(function(){
+    var map = window._photoMap || {};
+    Object.keys(map).forEach(function(pid){
+      var slot = document.getElementById(pid);
+      if(!slot) return;
+      var url = map[pid].url;
+      var caption = map[pid].caption;
+      var img = document.createElement('img');
+      img.className = 'photo-thumb';
+      img.title = caption;
+      img.setAttribute('data-url', encodeURIComponent(url));
+      img.setAttribute('data-caption', caption);
+      img.setAttribute('onclick', 'openLightboxEl(this)');
+      img.style.cssText = 'width:48px;height:36px;object-fit:cover;border-radius:6px;border:1px solid #e2e0d8;cursor:pointer;display:block';
+      img.onerror = function(){ slot.innerHTML = '<span style="font-size:10px;color:#999">⚠</span>'; };
+      img.src = url;
+      slot.innerHTML = '';
+      slot.appendChild(img);
+    });
+  });
+}
+
 window.renderTable=function(){
   const q=(document.getElementById('filter-q')?.value||'').toLowerCase();
   const st=document.getElementById('filter-status')?.value||'';
@@ -690,22 +713,20 @@ window.renderTable=function(){
   const wrap=document.getElementById('tbl-wrap');
   if(!arr.length){ wrap.style.display='none'; empty.style.display='block'; return; }
   wrap.style.display='block'; empty.style.display='none';
+  window._photoMap = {};
+
+  // Store photo URLs globally, keyed by unique ID
+  window._photoMap = window._photoMap || {};
 
   function thumbHtml(url, caption, uploading){
-    if(!url && uploading) return '<span style="font-size:10px;color:var(--amber)">⏳</span>';
-    if(!url) return '<span style="font-size:11px;color:var(--text3)">—</span>';
-    // Store full URL in data-url, use it directly as src
-    return '<img class="photo-thumb" '
-      + 'src="' + url + '" '
-      + 'data-url="' + encodeURIComponent(url) + '" '
-      + 'data-caption="' + caption + '" '
-      + 'onclick="openLightboxEl(this)" '
-      + 'title="' + caption + '" '
-      + 'style="width:48px;height:36px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" '
-      + 'onerror="this.outerHTML='<span style=&quot;font-size:10px;color:var(--red)&quot;>⚠</span>'"'
-      + '/>';
+    if(!url && uploading) return '<span style="font-size:11px;color:#b45309">uploading...</span>';
+    if(!url) return '<span style="font-size:11px;color:#999">—</span>';
+    const pid = 'p' + (++window._thumbCounter);
+    window._photoMap[pid] = {url, caption};
+    return '<span id="' + pid + '" class="thumb-slot"></span>';
   }
 
+  window._thumbCounter = window._thumbCounter || 0;
   tbody.innerHTML=arr.map(r=>`
     <tr id="row-${r.id}">
       <td style="font-weight:600">${r.name}</td>
@@ -745,6 +766,7 @@ window.renderTable=function(){
         </div>
       </td>
     </tr>`).join('');
+  loadThumbnails();
 };
 
 // ── LIGHTBOX ──
@@ -979,6 +1001,31 @@ function showSavedBadge(){
   if(badge) badge.style.display='inline-block';
 }
 
+// ── CAPTURE ALL ERRORS AND SHOW IN UI ──
+const _origError = console.error.bind(console);
+console.error = function(...args){
+  _origError(...args);
+  const msg = args.map(a => typeof a === 'object' ? (a.message||a.code||JSON.stringify(a)) : a).join(' ');
+  showErrorBar(msg);
+};
+window.addEventListener('unhandledrejection', function(e){
+  const msg = e.reason?.message || e.reason?.code || String(e.reason);
+  showErrorBar(msg);
+});
+
+function showErrorBar(msg){
+  let bar = document.getElementById('global-error-bar');
+  if(!bar){
+    bar = document.createElement('div');
+    bar.id = 'global-error-bar';
+    bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#9b2226;color:#fff;font-size:13px;padding:10px 16px;z-index:99999;display:flex;justify-content:space-between;align-items:center;font-family:monospace';
+    document.body.appendChild(bar);
+  }
+  bar.innerHTML = '<span>🔴 Firebase Fehler: ' + msg + '</span>'
+    + '<button onclick="document.getElementById('global-error-bar').remove()" '
+    + 'style="background:none;border:1px solid rgba(255,255,255,.5);color:#fff;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:12px">✕</button>';
+}
+
 boot();
 </script>
 
@@ -1171,27 +1218,41 @@ boot();
     cap.textContent='⏳ '+caption+' lädt…';
     lb.style.display='flex';
     document.body.style.overflow='hidden';
+    // Give browser time to render the lightbox div first
     setTimeout(function(){
       canvas=document.getElementById('lb-canvas');
+      if(!canvas){console.error('Canvas not found'); return;}
+      var W=canvas.offsetWidth;
+      var H=canvas.offsetHeight;
+      if(W===0||H===0){
+        // fallback — use window size
+        W=window.innerWidth;
+        H=window.innerHeight;
+        canvas.style.width=W+'px';
+        canvas.style.height=H+'px';
+      }
       ctx=canvas.getContext('2d');
-      canvas.width=canvas.offsetWidth*window.devicePixelRatio;
-      canvas.height=canvas.offsetHeight*window.devicePixelRatio;
+      canvas.width=W*window.devicePixelRatio;
+      canvas.height=H*window.devicePixelRatio;
       ctx.scale(window.devicePixelRatio,window.devicePixelRatio);
-      draw();
+      // Draw loading indicator
+      ctx.fillStyle='rgba(255,255,255,0.1)';
+      ctx.fillRect(W/2-60,H/2-4,120,8);
+      // Load image — no crossOrigin to avoid CORS issues
       img=new Image();
-      img.crossOrigin='anonymous';
       img.onload=function(){
         loaded=true;
         fitToScreen();
         draw();
         cap.textContent=caption;
-        document.getElementById('lb-hint').style.display='block';
       };
       img.onerror=function(){
-        cap.textContent=caption+' — wird noch hochgeladen';
+        cap.textContent=caption+' — Fehler beim Laden. Foto öffnen: ';
+        // Show direct link as fallback
+        cap.innerHTML=caption+' — <a href="'+lbUrl+'" target="_blank" style="color:#fff;text-decoration:underline">Foto öffnen ↗</a>';
       };
-      img.src=lbUrl+'&t='+Date.now(); // cache bust
-    },50);
+      img.src=lbUrl;
+    },80);
   };
 
   window.closeLightbox=function(){
