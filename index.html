@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Lagerverwaltung</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet"/>
 <style>
 :root{--bg:#f5f4f0;--sur:#fff;--sur2:#f0efe9;--brd:#e2e0d8;--brd2:#ccc9be;--txt:#1a1917;--txt2:#6b6860;--txt3:#a09e98;--grn:#2d6a4f;--grn-bg:#d8f3dc;--red:#9b2226;--red-bg:#fde8e8;--amb:#7d4e00;--amb-bg:#fff3cd;--blu:#1a4a8a;--blu-bg:#e8f0fb;--r:10px;--rl:16px;--mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -150,19 +150,21 @@ tbody tr:hover{background:var(--sur2)}
         <div style="width:56px;height:56px;background:var(--txt);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto .75rem">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         </div>
-        <div id="sel-title" style="font-size:20px;font-weight:600;letter-spacing:-.01em">Lagerverwaltung</div>
-        <div id="sel-sub" style="font-size:13px;color:var(--txt3);margin-top:3px">Ein- &amp; Ausfahrt System</div>
+        <div id="sel-title" data-i18n="sel-title-default" style="font-size:20px;font-weight:600;letter-spacing:-.01em">Lagerverwaltung</div>
+        <div id="sel-sub" data-i18n="sel-sub-default" style="font-size:13px;color:var(--txt3);margin-top:3px">Ein- &amp; Ausfahrt System</div>
       </div>
       <div class="cg" id="sel-cards">
         <div class="cc" onclick="go('p-driver')">
           <div class="ci"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
-          <h2>Fahrer-Portal</h2><p>Ein- und Ausfahrt erfassen</p>
-          <span class="ctag">Fahrer-Zugang</span>
+          <h2 id="sel-driver-h" data-i18n="sel-driver-h">Fahrer-Portal</h2>
+          <p id="sel-driver-p" data-i18n="sel-driver-p">Ein- und Ausfahrt erfassen</p>
+          <span class="ctag" id="sel-driver-tag" data-i18n="sel-driver-tag">Fahrer-Zugang</span>
         </div>
         <div class="cc" onclick="go('p-login')">
           <div class="ci"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-          <h2>Admin-Dashboard</h2><p>Alle Einträge verwalten</p>
-          <span class="ctag" id="sel-admin-tag">Passwort erforderlich</span>
+          <h2 id="sel-admin-h" data-i18n="sel-admin-h">Admin-Dashboard</h2>
+          <p id="sel-admin-p" data-i18n="sel-admin-p">Alle Einträge verwalten</p>
+          <span class="ctag" id="sel-admin-tag" data-i18n="sel-admin-tag-default">Passwort erforderlich</span>
         </div>
       </div>
     </div>
@@ -174,7 +176,7 @@ tbody tr:hover{background:var(--sur2)}
   <div class="tb">
     <div class="tb-logo">
       <div class="tb-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
-      <div><div class="tb-title">Fahrer-Portal</div><div class="tb-sub" id="d-firma-label">Einfahrt erfassen</div></div>
+      <div><div class="tb-title" data-i18n="sel-driver-h">Fahrer-Portal</div><div class="tb-sub" id="d-firma-label">Einfahrt erfassen</div></div>
     </div>
     <button class="btn btn-sm" onclick="go('p-select')">← Zurück</button>
   </div>
@@ -539,7 +541,12 @@ async function boot(){
     firmaName=cd?.name||f;
     q('sel-title').textContent=firmaName;
     q('sel-sub').textContent='Lagerverwaltung — '+f;
-    q('sel-admin-tag').textContent='Firmen-Admin';
+    q('sel-driver-h') && (q('sel-driver-h').textContent=t('sel-driver-h'));
+    q('sel-driver-p') && (q('sel-driver-p').textContent=t('sel-driver-p'));
+    q('sel-driver-tag') && (q('sel-driver-tag').textContent=t('sel-driver-tag'));
+    q('sel-admin-h') && (q('sel-admin-h').textContent=t('sel-admin-h'));
+    q('sel-admin-p') && (q('sel-admin-p').textContent=t('sel-admin-p'));
+    q('sel-admin-tag').textContent=t('sel-admin-tag-default');
     q('d-firma-label').textContent=firmaName;
     q('login-title').textContent=firmaName+' — Admin';
     q('login-firm').textContent=firmaName;
@@ -1260,6 +1267,13 @@ var TRANS_MAP = [
   ['btn-submit-de','textContent','btn-submit'],
   ['btn-reset-de','textContent','btn-reset'],
   ['d-submit-btn','textContent','btn-submit'],
+  ['sel-title','textContent','sel-title-default'],
+  ['sel-sub','textContent','sel-sub-default'],
+  ['sel-driver-h','textContent','sel-driver-h'],
+  ['sel-driver-p','textContent','sel-driver-p'],
+  ['sel-driver-tag','textContent','sel-driver-tag'],
+  ['sel-admin-h','textContent','sel-admin-h'],
+  ['sel-admin-p','textContent','sel-admin-p'],
 ];
 
 function t(key){ return (T[LANG]||T.de)[key] || key; }
@@ -1267,6 +1281,8 @@ window.t = t;
 
 function applyLang(){
   var isAr = LANG === 'ar';
+  // Apply Arabic font
+  document.body.style.fontFamily = isAr ? "'Tajawal', sans-serif" : "'DM Sans', sans-serif";
   document.documentElement.setAttribute('lang', isAr ? 'ar' : 'de');
   document.documentElement.setAttribute('dir', isAr ? 'rtl' : 'ltr');
 
