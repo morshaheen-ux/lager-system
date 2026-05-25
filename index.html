@@ -123,10 +123,24 @@ tbody tr:hover{background:var(--sur2)}
 #lb-bar{position:absolute;top:0;left:0;right:0;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(rgba(0,0,0,.6),transparent)}
 #lb-cap{color:#fff;font-size:14px;font-weight:500}
 #lb-hint{position:absolute;bottom:12px;left:0;right:0;text-align:center;color:rgba(255,255,255,.3);font-size:11px;pointer-events:none}
+.lang-btn{position:fixed;top:12px;right:12px;z-index:9999;background:var(--sur);border:1px solid var(--brd2);border-radius:8px;padding:5px 12px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+.lang-btn:hover{background:var(--sur2)}
+[dir=rtl] input,[dir=rtl] select{text-align:right}
+[dir=rtl] .tb-logo{flex-direction:row-reverse}
+[dir=rtl] .tb-actions{flex-direction:row-reverse}
+[dir=rtl] .br{flex-direction:row-reverse}
+[dir=rtl] .frow{flex-direction:row-reverse}
+[dir=rtl] .cg{direction:rtl}
+[dir=rtl] .stats{direction:rtl}
+[dir=rtl] .tabs{direction:rtl}
+[dir=rtl] .co{flex-direction:row-reverse}
+[dir=rtl] td,[dir=rtl] th{text-align:right}
 @media(max-width:600px){.main{padding:1rem}.tb{padding:0 1rem}.g2,.g3{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.cg{grid-template-columns:1fr}.photo-grid{grid-template-columns:1fr}.edit-panel.open{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
+
+<button class="lang-btn" id="lang-btn" onclick="toggleLang()">عربي</button>
 
 <!-- ═══ SELECT ═══ -->
 <div id="p-select" class="page active">
@@ -167,56 +181,56 @@ tbody tr:hover{background:var(--sur2)}
   <div class="main" style="max-width:600px">
     <div id="d-succ" class="succ">
       <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--grn);margin-bottom:10px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-      <h2>Eintrag gespeichert!</h2>
+      <h2 data-i18n="succ-title">Eintrag gespeichert!</h2>
       <p id="d-succ-msg"></p>
-      <button class="btn btn-p" style="margin:1rem auto 0;display:inline-flex" onclick="resetDriver()">+ Neuer Eintrag</button>
+      <button class="btn btn-p" style="margin:1rem auto 0;display:inline-flex" onclick="resetDriver()" data-i18n="btn-new">+ Neuer Eintrag</button>
     </div>
     <div id="d-form">
       <div class="card">
         <div class="ch">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          Fahrerinformationen
-          <span id="d-saved-badge" style="display:none;margin-left:auto;font-size:11px;background:var(--grn-bg);color:var(--grn);border:1px solid #b7dfc2;padding:2px 9px;border-radius:99px">✓ Gespeichert</span>
+          <span data-i18n="driver-section-info">Fahrerinformationen</span>
+          <span id="d-saved-badge" style="display:none;margin-left:auto;font-size:11px;background:var(--grn-bg);color:var(--grn);border:1px solid #b7dfc2;padding:2px 9px;border-radius:99px" data-i18n='driver-saved'>✓ Gespeichert</span>
         </div>
         <div class="g2">
-          <div class="fg full"><label>Fahrername *</label><input type="text" id="d-name" placeholder="Vor- und Nachname"/></div>
-          <div class="fg"><label>Kennzeichen *</label><input type="text" id="d-plate" placeholder="B-AB 1234" style="font-family:var(--mono)"/></div>
-          <div class="fg"><label>Fahrzeug</label><input type="text" id="d-car" placeholder="z. B. VW Transporter"/></div>
+          <div class="fg full"><label data-i18n="lbl-name">Fahrername *</label><input type="text" id="d-name" data-i18n-ph="ph-name" placeholder="Vor- und Nachname"/></div>
+          <div class="fg"><label data-i18n="lbl-plate">Kennzeichen *</label><input type="text" id="d-plate" placeholder="B-AB 1234" style="font-family:var(--mono)"/></div>
+          <div class="fg"><label data-i18n="lbl-car">Fahrzeug</label><input type="text" id="d-car" data-i18n-ph="ph-car" placeholder="z. B. VW Transporter"/></div>
         </div>
       </div>
       <div class="card">
         <div class="ch"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Zeiten &amp; Datum</div>
         <div class="g3">
-          <div class="fg"><label>Einfahrt *</label><input type="time" id="d-timein"/></div>
-          <div class="fg"><label>Ausfahrt</label><input type="time" id="d-timeout"/></div>
-          <div class="fg"><label>Datum *</label><input type="date" id="d-date"/></div>
-          <div class="fg full"><label>Bemerkung</label><input type="text" id="d-note" placeholder="Optional"/></div>
+          <div class="fg"><label data-i18n="lbl-timein">Einfahrt *</label><input type="time" id="d-timein"/></div>
+          <div class="fg"><label data-i18n="lbl-timeout">Ausfahrt</label><input type="time" id="d-timeout"/></div>
+          <div class="fg"><label data-i18n="lbl-date">Datum *</label><input type="date" id="d-date"/></div>
+          <div class="fg full"><label data-i18n="lbl-note">Bemerkung</label><input type="text" id="d-note" data-i18n-ph="ph-note" placeholder="Optional"/></div>
         </div>
       </div>
       <div class="card">
-        <div class="ch"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Fotos (optional)</div>
+        <div class="ch"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> <span data-i18n="driver-section-photos">Fotos (optional)</span></div>
         <div class="photo-grid">
           <div class="photo-slot">
-            <label>Kennzeichen</label>
-            <div class="photo-btn" id="pb-plate"><input type="file" accept="image/*" capture="environment" onchange="handlePhoto('plate',this)"/><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="6" rx="1"/><path d="M5 11V9a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2"/></svg><span>Foto aufnehmen</span></div>
-            <img id="pp-plate" class="photo-prev"/><button class="photo-clr" id="pc-plate" onclick="clearPhoto('plate')">✕ Entfernen</button>
+            <label data-i18n="photo-plate-lbl">Kennzeichen</label>
+            <div class="photo-btn" id="pb-plate"><input type="file" accept="image/*" capture="environment" onchange="handlePhoto('plate',this)"/><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="6" rx="1"/><path d="M5 11V9a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2"/></svg><span data-i18n="photo-plate-span">Foto aufnehmen</span></div>
+            <img id="pp-plate" class="photo-prev"/><button class="photo-clr" id="pc-plate" onclick="clearPhoto('plate')" data-i18n='remove-photo'>✕ Entfernen</button>
           </div>
           <div class="photo-slot">
-            <label>KM Einfahrt</label>
-            <div class="photo-btn" id="pb-kmin"><input type="file" accept="image/*" capture="environment" onchange="handlePhoto('kmin',this)"/><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Tacho Einfahrt</span></div>
-            <img id="pp-kmin" class="photo-prev"/><button class="photo-clr" id="pc-kmin" onclick="clearPhoto('kmin')">✕ Entfernen</button>
+            <label data-i18n="photo-kmin-lbl">KM Einfahrt</label>
+            <div class="photo-btn" id="pb-kmin"><input type="file" accept="image/*" capture="environment" onchange="handlePhoto('kmin',this)"/><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span data-i18n="photo-kmin-span">Tacho Einfahrt</span></div>
+            <img id="pp-kmin" class="photo-prev"/><button class="photo-clr" id="pc-kmin" onclick="clearPhoto('kmin')" data-i18n='remove-photo'>✕ Entfernen</button>
           </div>
           <div class="photo-slot">
-            <label>KM Ausfahrt</label>
-            <div class="photo-btn" id="pb-kmout"><input type="file" accept="image/*" capture="environment" onchange="handlePhoto('kmout',this)"/><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Tacho Ausfahrt</span></div>
-            <img id="pp-kmout" class="photo-prev"/><button class="photo-clr" id="pc-kmout" onclick="clearPhoto('kmout')">✕ Entfernen</button>
+            <label data-i18n="photo-kmout-lbl">KM Ausfahrt</label>
+            <div class="photo-btn" id="pb-kmout"><input type="file" accept="image/*" capture="environment" onchange="handlePhoto('kmout',this)"/><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span data-i18n="photo-kmout-span">Tacho Ausfahrt</span></div>
+            <img id="pp-kmout" class="photo-prev"/><button class="photo-clr" id="pc-kmout" onclick="clearPhoto('kmout')" data-i18n='remove-photo'>✕ Entfernen</button>
           </div>
         </div>
         <div id="d-photo-status" style="margin-top:8px;font-size:12px;color:var(--txt3)">Keine Fotos ausgewählt (optional)</div>
       </div>
       <div class="br">
-        <button class="btn btn-p" id="d-submit-btn" onclick="driverSubmit()">✓ Einfahrt speichern</button>
-        <button class="btn" onclick="clearDriver()">Zurücksetzen</button>
+        <button class="btn btn-p" id="d-submit-btn" onclick="driverSubmit()" data-i18n="btn-submit">✓ Einfahrt speichern</button>
+        <button class="btn" data-i18n="btn-reset" onclick="clearDriver()">Zurücksetzen</button>
       </div>
     </div>
   </div>
@@ -237,7 +251,7 @@ tbody tr:hover{background:var(--sur2)}
         <div style="font-size:17px;font-weight:600;margin-bottom:3px" id="login-firm">Anmeldung</div>
         <div style="font-size:13px;color:var(--txt3);margin-bottom:1.2rem">Bitte Admin-Passwort eingeben</div>
         <div class="fg" style="margin-bottom:12px"><label>Passwort</label><input type="password" id="a-pass" placeholder="Passwort" onkeydown="if(event.key==='Enter')adminLogin()"/></div>
-        <button class="btn btn-p" style="width:100%;justify-content:center" onclick="adminLogin()">→ Anmelden</button>
+        <button class="btn btn-p" style="width:100%;justify-content:center" onclick="adminLogin()" data-i18n="btn-login">→ Anmelden</button>
         <div class="err" id="login-err">Falsches Passwort.</div>
       </div>
     </div>
@@ -252,16 +266,16 @@ tbody tr:hover{background:var(--sur2)}
       <div><div class="tb-title" id="admin-title">Admin</div><div class="tb-sub" id="admin-sub">Dashboard</div></div>
     </div>
     <div style="display:flex;gap:6px">
-      <button class="btn btn-sm" onclick="exportCSV()">⬇ CSV</button>
-      <button class="btn btn-sm" onclick="go('p-select')">Abmelden</button>
+      <button class="btn btn-sm" onclick="exportCSV()" data-i18n="btn-csv">⬇ CSV</button>
+      <button class="btn btn-sm" onclick="go('p-select')" data-i18n="admin-back">Abmelden</button>
     </div>
   </div>
   <div class="main">
     <div class="stats" id="admin-stats"></div>
     <div class="tabs">
-      <button class="tab active" id="t-table" onclick="switchTab('table')">📋 Tabelle</button>
-      <button class="tab" id="t-add" onclick="switchTab('add')">+ Hinzufügen</button>
-      <button class="tab" id="t-settings" onclick="switchTab('settings')">⚙ Einstellungen</button>
+      <button class="tab active" id="t-table" onclick="switchTab('table')" data-i18n="tab-table">📋 Tabelle</button>
+      <button class="tab" id="t-add" onclick="switchTab('add')" data-i18n="tab-add">+ Hinzufügen</button>
+      <button class="tab" id="t-settings" onclick="switchTab('settings')" data-i18n="tab-settings">⚙ Einstellungen</button>
     </div>
 
     <!-- TABLE TAB -->
@@ -273,15 +287,15 @@ tbody tr:hover{background:var(--sur2)}
       </div>
       <div class="tw" id="tbl-wrap">
         <table><thead><tr>
-          <th onclick="sortBy('name')">Fahrer <span id="arr-name">↕</span></th>
-          <th onclick="sortBy('plate')">Kennzeichen <span id="arr-plate">↕</span></th>
-          <th onclick="sortBy('car')">Fahrzeug <span id="arr-car">↕</span></th>
-          <th onclick="sortBy('timein')">Einfahrt <span id="arr-timein">↕</span></th>
-          <th onclick="sortBy('timeout')">Ausfahrt <span id="arr-timeout">↕</span></th>
-          <th onclick="sortBy('date')">Datum <span id="arr-date">↕</span></th>
-          <th>Fotos</th>
-          <th>Status</th>
-          <th style="text-align:right">Aktionen</th>
+          <th id="th-name-el" onclick="sortBy('name')">Fahrer <span id="arr-name">↕</span></th>
+          <th id="th-plate-el" onclick="sortBy('plate')">Kennzeichen <span id="arr-plate">↕</span></th>
+          <th id="th-car-el" onclick="sortBy('car')">Fahrzeug <span id="arr-car">↕</span></th>
+          <th id="th-timein-el" onclick="sortBy('timein')">Einfahrt <span id="arr-timein">↕</span></th>
+          <th id="th-timeout-el" onclick="sortBy('timeout')">Ausfahrt <span id="arr-timeout">↕</span></th>
+          <th id="th-date-el" onclick="sortBy('date')">Datum <span id="arr-date">↕</span></th>
+          <th id="th-photos-el">Fotos</th>
+          <th id="th-status-el">Status</th>
+          <th id="th-actions-el" style="text-align:right">Aktionen</th>
         </tr></thead><tbody id="tbl-body"></tbody></table>
       </div>
       <div id="tbl-empty" class="empty" style="display:none">Keine Einträge gefunden</div>
@@ -290,19 +304,19 @@ tbody tr:hover{background:var(--sur2)}
     <!-- ADD TAB -->
     <div id="tc-add" style="display:none">
       <div class="card">
-        <div class="ch">+ Neuen Eintrag manuell erfassen</div>
+        <div class="ch"><span data-i18n="add-title">+ Neuen Eintrag manuell erfassen</span></div>
         <div class="g3">
-          <div class="fg"><label>Fahrername *</label><input type="text" id="m-name" placeholder="Name"/></div>
-          <div class="fg"><label>Kennzeichen *</label><input type="text" id="m-plate" placeholder="B-AB 1234" style="font-family:var(--mono)"/></div>
-          <div class="fg"><label>Fahrzeug</label><input type="text" id="m-car" placeholder="Marke / Typ"/></div>
-          <div class="fg"><label>Einfahrt *</label><input type="time" id="m-timein"/></div>
-          <div class="fg"><label>Ausfahrt</label><input type="time" id="m-timeout"/></div>
-          <div class="fg"><label>Datum *</label><input type="date" id="m-date"/></div>
-          <div class="fg full"><label>Bemerkung</label><input type="text" id="m-note" placeholder="Optional"/></div>
+          <div class="fg"><label data-i18n="lbl-m-name">Fahrername *</label><input type="text" id="m-name" placeholder="Name"/></div>
+          <div class="fg"><label data-i18n="lbl-m-plate">Kennzeichen *</label><input type="text" id="m-plate" placeholder="B-AB 1234" style="font-family:var(--mono)"/></div>
+          <div class="fg"><label data-i18n="lbl-m-car">Fahrzeug</label><input type="text" id="m-car" placeholder="Marke / Typ"/></div>
+          <div class="fg"><label data-i18n="lbl-m-timein">Einfahrt *</label><input type="time" id="m-timein"/></div>
+          <div class="fg"><label data-i18n="lbl-m-timeout">Ausfahrt</label><input type="time" id="m-timeout"/></div>
+          <div class="fg"><label data-i18n="lbl-m-date">Datum *</label><input type="date" id="m-date"/></div>
+          <div class="fg full"><label data-i18n="lbl-m-note">Bemerkung</label><input type="text" id="m-note" placeholder="Optional"/></div>
         </div>
         <div class="br">
-          <button class="btn btn-p" onclick="adminAdd()">✓ Hinzufügen</button>
-          <button class="btn" onclick="clearManual()">Leeren</button>
+          <button class="btn btn-p" onclick="adminAdd()" data-i18n="btn-add">✓ Hinzufügen</button>
+          <button class="btn" data-i18n="btn-clear" onclick="clearManual()">Leeren</button>
         </div>
       </div>
     </div>
@@ -310,20 +324,20 @@ tbody tr:hover{background:var(--sur2)}
     <!-- SETTINGS TAB -->
     <div id="tc-settings" style="display:none">
       <div class="ss">
-        <div class="ssl">🔒 Passwort ändern</div>
+        <div class="ssl"><span data-i18n="settings-pw-title">🔒 Passwort ändern</span></div>
         <div class="g2" style="max-width:480px">
-          <div class="fg full"><label>Aktuelles Passwort</label><input type="password" id="pw-cur" placeholder="Aktuelles Passwort"/></div>
-          <div class="fg"><label>Neues Passwort</label><input type="password" id="pw-new" placeholder="Neues Passwort" oninput="pwStrength()"/>
+          <div class="fg full"><label data-i18n="lbl-pw-cur">Aktuelles Passwort</label><input type="password" id="pw-cur" data-i18n-ph="ph-pw-cur" placeholder="Aktuelles Passwort"/></div>
+          <div class="fg"><label data-i18n="lbl-pw-new">Neues Passwort</label><input type="password" id="pw-new" data-i18n-ph="ph-pw-new" placeholder="Neues Passwort" oninput="pwStrength()"/>
             <div class="pw-bar" id="pw-bar"></div>
             <div style="font-size:11px;color:var(--txt3);margin-top:2px" id="pw-lbl"></div>
           </div>
-          <div class="fg"><label>Bestätigen</label><input type="password" id="pw-conf" placeholder="Wiederholen"/></div>
+          <div class="fg"><label data-i18n="lbl-pw-conf">Bestätigen</label><input type="password" id="pw-conf" data-i18n-ph="ph-pw-conf" placeholder="Wiederholen"/></div>
         </div>
-        <div class="br"><button class="btn btn-p" onclick="changePw()">✓ Speichern</button><button class="btn" onclick="clearPw()">Abbrechen</button></div>
+        <div class="br"><button class="btn btn-p" onclick="changePw()" data-i18n="btn-pw-save">✓ Speichern</button><button class="btn" data-i18n="btn-pw-cancel" onclick="clearPw()">Abbrechen</button></div>
         <div id="pw-msg" style="display:none;margin-top:8px;font-size:13px;padding:7px 11px;border-radius:8px"></div>
       </div>
       <div class="ss">
-        <div class="ssl">ℹ Informationen</div>
+        <div class="ssl"><span data-i18n="settings-info-title">ℹ Informationen</span></div>
         <div class="g2" style="max-width:440px;font-size:13px;color:var(--txt2)">
           <div><span style="color:var(--txt3);font-size:10px;display:block;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Firma</span><span id="inf-company">—</span></div>
           <div><span style="color:var(--txt3);font-size:10px;display:block;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Code</span><span id="inf-code" style="font-family:var(--mono)">—</span></div>
@@ -332,9 +346,9 @@ tbody tr:hover{background:var(--sur2)}
         </div>
       </div>
       <div class="ss" style="border-color:#f5c6c6">
-        <div class="ssl" style="color:var(--red)">⚠ Gefahrenzone</div>
-        <p style="font-size:13px;color:var(--txt2);margin-bottom:.75rem">Alle Einträge dieser Firma löschen.</p>
-        <button class="btn btn-d" onclick="deleteAll()">Alle Einträge löschen</button>
+        <div class="ssl" style="color:var(--red)"><span data-i18n="settings-danger-title">⚠ Gefahrenzone</span></div>
+        <p style="font-size:13px;color:var(--txt2);margin-bottom:.75rem" data-i18n="settings-danger-desc">Alle Einträge dieser Firma löschen.</p>
+        <button class="btn btn-d" onclick="deleteAll()" data-i18n="btn-delete-all">Alle Einträge löschen</button>
       </div>
     </div>
   </div>
@@ -350,14 +364,14 @@ tbody tr:hover{background:var(--sur2)}
     <button class="btn btn-sm" onclick="go('p-select')">← Zurück</button>
   </div>
   <div class="main">
-    <div class="div">Neue Firma erstellen</div>
+    <div class="div"><span data-i18n="sa-new-title">Neue Firma erstellen</span></div>
     <div class="card">
       <div class="g3">
-        <div class="fg"><label>Firmenname *</label><input type="text" id="sa-name" placeholder="z. B. BMW Logistik" oninput="autoSlug()"/></div>
-        <div class="fg"><label>Firma-Code *</label><input type="text" id="sa-code" placeholder="bmw-logistik" style="font-family:var(--mono)"/></div>
-        <div class="fg"><label>Admin-Passwort *</label><input type="password" id="sa-pass" placeholder="Passwort"/></div>
+        <div class="fg"><label data-i18n="lbl-sa-name">Firmenname *</label><input type="text" id="sa-name" placeholder="z. B. BMW Logistik" oninput="autoSlug()"/></div>
+        <div class="fg"><label data-i18n="lbl-sa-code">Firma-Code *</label><input type="text" id="sa-code" placeholder="bmw-logistik" style="font-family:var(--mono)"/></div>
+        <div class="fg"><label data-i18n="lbl-sa-pass">Admin-Passwort *</label><input type="password" id="sa-pass" placeholder="Passwort"/></div>
       </div>
-      <div class="br"><button class="btn btn-b" onclick="addCompany()">+ Firma erstellen</button></div>
+      <div class="br"><button class="btn btn-b" onclick="addCompany()" data-i18n="btn-sa-add">+ Firma erstellen</button></div>
     </div>
     <div class="div">Firmen &amp; Links</div>
     <div id="sa-list"><div class="empty">Noch keine Firmen erstellt</div></div>
@@ -369,7 +383,7 @@ tbody tr:hover{background:var(--sur2)}
   <div id="lb-bar">
     <span id="lb-cap"></span>
     <div style="display:flex;gap:6px">
-      <button onclick="event.stopPropagation();lbDownload()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;padding:5px 12px;border-radius:7px;font-size:13px;cursor:pointer">⬇ Speichern</button>
+      <button onclick="event.stopPropagation();lbDownload()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;padding:5px 12px;border-radius:7px;font-size:13px;cursor:pointer" data-i18n="lb-save">⬇ Speichern</button>
       <button onclick="event.stopPropagation();closeLb()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;width:34px;height:34px;border-radius:7px;font-size:18px;cursor:pointer">✕</button>
     </div>
   </div>
@@ -392,7 +406,7 @@ function openLb(url, caption){
   var img = document.getElementById('lb-img');
   var cap = document.getElementById('lb-cap');
   img.src = '';
-  cap.textContent = '⏳ ' + caption + ' lädt…';
+  cap.textContent = t('lb-loading') + ' ' + caption;
   document.getElementById('lb').style.display = 'flex';
   document.body.style.overflow = 'hidden';
   img.onload = function(){ cap.textContent = caption; };
@@ -511,7 +525,7 @@ async function uploadPhoto(file,path){
 // ── BOOT ──
 async function boot(){
   try{ await init(); }
-  catch(e){ toast('Firebase Verbindungsfehler!',false); return; }
+  catch(e){ toast(t('toast-error'),false); return; }
 
   const p=new URLSearchParams(window.location.search);
   const f=p.get('firma'), sa=p.get('superadmin');
@@ -582,13 +596,13 @@ function updatePhotoStatus(){
 window.driverSubmit=async function(){
   const name=val('d-name').trim(), plate=val('d-plate').trim();
   const timein=val('d-timein'), date=val('d-date')||today();
-  if(!name){toast('Fahrername fehlt.',false);q('d-name').focus();return;}
-  if(!plate){toast('Kennzeichen fehlt.',false);q('d-plate').focus();return;}
-  if(!timein){toast('Einfahrtzeit fehlt.',false);q('d-timein').focus();return;}
-  if(!firma){toast('Kein Firmenzugang.',false);return;}
+  if(!name){toast(t('err-name'),false);q('d-name').focus();return;}
+  if(!plate){toast(t('err-plate'),false);q('d-plate').focus();return;}
+  if(!timein){toast(t('err-time'),false);q('d-timein').focus();return;}
+  if(!firma){toast(t('err-firma'),false);return;}
 
   const btn=q('d-submit-btn');
-  btn.disabled=true; btn.textContent='Wird gespeichert…';
+  btn.disabled=true; btn.textContent=t('saving');
 
   try{
     // Save entry immediately
@@ -600,8 +614,8 @@ window.driverSubmit=async function(){
     q('d-form').style.display='none';
     q('d-succ-msg').textContent=name+' ('+plate+') wurde erfasst.';
     q('d-succ').style.display='block';
-    toast('Eintrag gespeichert!');
-    btn.disabled=false; btn.textContent='✓ Einfahrt speichern';
+    toast(t('toast-saved'));
+    btn.disabled=false; btn.textContent=t('btn-submit');
 
     // Upload photos in background
     if(Object.values(photoFiles).some(Boolean)){
@@ -613,7 +627,7 @@ window.driverSubmit=async function(){
     }
   }catch(e){
     toast('Fehler: '+(e.message||'Bitte erneut versuchen.'),false);
-    btn.disabled=false; btn.textContent='✓ Einfahrt speichern';
+    btn.disabled=false; btn.textContent=t('btn-submit');
   }
 };
 
@@ -672,10 +686,10 @@ function updateStats(){
   q('inf-count').textContent=total;
   q('admin-sub').textContent=total+' Einträge';
   q('admin-stats').innerHTML=
-    `<div class="stat"><div class="sv">${total}</div><div class="sl">Gesamt</div></div>`+
-    `<div class="stat"><div class="sv" style="color:var(--grn)">${inside}</div><div class="sl">Im Lager</div></div>`+
-    `<div class="stat"><div class="sv" style="color:var(--red)">${out}</div><div class="sl">Ausgefahren</div></div>`+
-    `<div class="stat"><div class="sv">${todayCnt}</div><div class="sl">Heute</div></div>`;
+    `<div class="stat"><div class="sv">${total}</div><div class="sl">${t('stat-total')}</div></div>`+
+    `<div class="stat"><div class="sv" style="color:var(--grn)">${inside}</div><div class="sl">${t('stat-in')}</div></div>`+
+    `<div class="stat"><div class="sv" style="color:var(--red)">${out}</div><div class="sl">${t('stat-out')}</div></div>`+
+    `<div class="stat"><div class="sv">${todayCnt}</div><div class="sl">${t('stat-today')}</div></div>`;
 }
 
 // ── TABLE ──
@@ -705,7 +719,7 @@ window.renderTable=function(){
   });
 
   const tbody=q('tbl-body'), empty=q('tbl-empty'), wrap=q('tbl-wrap');
-  if(!arr.length){wrap.style.display='none';empty.style.display='block';return;}
+  if(!arr.length){wrap.style.display='none';empty.textContent=t('empty-text');empty.style.display='block';return;}
   wrap.style.display='block';empty.style.display='none';
 
   tbody.innerHTML=arr.map(r=>{
@@ -756,28 +770,28 @@ window.toggleEdit=function(id){
 
 window.saveEdit=async function(id){
   const data={name:q('en-'+id).value.trim(),plate:q('ep2-'+id).value.trim(),car:q('ec-'+id).value.trim(),timein:q('ei-'+id).value,timeout:q('eo-'+id).value,note:q('eno-'+id).value.trim()};
-  if(!data.name||!data.plate){toast('Pflichtfelder fehlen.',false);return;}
+  if(!data.name||!data.plate){toast(t('toast-fields'),false);return;}
   await updateRec(id,data);
-  toast('Gespeichert.');
+  toast(t('toast-updated'));
 };
 
 window.delRec=async function(id){
-  if(!confirm('Eintrag löschen?')) return;
-  await deleteRec(id); toast('Gelöscht.');
+  if(!confirm(t('confirm-delete'))) return;
+  await deleteRec(id); toast(t('toast-deleted'));
 };
 
 window.deleteAll=async function(){
-  if(!confirm('ALLE Einträge löschen?')) return;
-  if(!confirm('Wirklich? Kann nicht rückgängig gemacht werden!')) return;
+  if(!confirm(t('confirm-delete-all1'))) return;
+  if(!confirm(t('confirm-delete-all2'))) return;
   await DB.set(DB.ref(DB.db,`firmen/${firma}/eintraege`),null);
-  records={}; renderTable(); updateStats(); toast('Alle Einträge gelöscht.');
+  records={}; renderTable(); updateStats(); toast(t('toast-all-deleted'));
 };
 
 // ── MANUAL ADD ──
 window.adminAdd=async function(){
   const name=val('m-name').trim(), plate=val('m-plate').trim();
   const timein=val('m-timein'), date=val('m-date')||today();
-  if(!name||!plate||!timein){toast('Pflichtfelder ausfüllen.',false);return;}
+  if(!name||!plate||!timein){toast(t('toast-fields'),false);return;}
   await saveRec({name,plate,car:val('m-car').trim(),timein,timeout:val('m-timeout'),date,note:val('m-note').trim(),ts:Date.now(),photoPlate:'',photoKmIn:'',photoKmOut:''});
   clearManual(); toast('Eintrag hinzugefügt!');
 };
@@ -803,11 +817,11 @@ window.changePw=async function(){
   const msg=q('pw-msg');
   const show=(txt,ok)=>{msg.style.display='block';msg.textContent=txt;msg.style.background=ok?'var(--grn-bg)':'var(--red-bg)';msg.style.color=ok?'var(--grn)':'var(--red)';msg.style.border=`1px solid ${ok?'#b7dfc2':'#f5c6c6'}`;};
   const correct=await getPass(firma);
-  if(cur!==correct){show('Aktuelles Passwort falsch.',false);return;}
-  if(nw.length<6){show('Mindestens 6 Zeichen.',false);return;}
-  if(nw!==conf){show('Passwörter stimmen nicht überein.',false);return;}
+  if(cur!==correct){show(t('pw-err-wrong'),false);return;}
+  if(nw.length<6){show(t('pw-err-short'),false);return;}
+  if(nw!==conf){show(t('pw-err-match'),false);return;}
   await setPass(firma,nw);
-  clearPw(); show('Passwort geändert!',true); toast('Passwort geändert!');
+  clearPw(); show(t('pw-ok'),true); toast(t('toast-pw'));
 };
 window.clearPw=function(){
   ['pw-cur','pw-new','pw-conf'].forEach(id=>{q(id).value='';});
@@ -815,18 +829,18 @@ window.clearPw=function(){
 };
 window.copyDriverLink=function(){
   const link=location.href.split('?')[0]+'?firma='+firma;
-  navigator.clipboard.writeText(link).then(()=>toast('Link kopiert!')).catch(()=>prompt('Fahrer-Link:',link));
+  navigator.clipboard.writeText(link).then(()=>toast(t('toast-link'))).catch(()=>prompt('Fahrer-Link:',link));
 };
 
 // ── CSV ──
 window.exportCSV=function(){
   const arr=Object.entries(records).map(([id,r])=>({id,...r}));
-  if(!arr.length){toast('Keine Daten.',false);return;}
+  if(!arr.length){toast(t('toast-no-data'),false);return;}
   const hdr='ID,Name,Kennzeichen,Fahrzeug,Einfahrt,Ausfahrt,Datum,Bemerkung,Foto Kennzeichen,Foto KM-ein,Foto KM-aus\n';
   const rows=arr.map(r=>[r.id,r.name,r.plate,r.car||'',r.timein||'',r.timeout||'',fmtDate(r.date),r.note||'',r.photoPlate||'',r.photoKmIn||'',r.photoKmOut||''].map(v=>`"${v}"`).join(',')).join('\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([hdr+rows],{type:'text/csv;charset=utf-8;'}));
-  a.download=`lager-${firma}-${today()}.csv`; a.click(); toast('CSV heruntergeladen.');
+  a.download=`lager-${firma}-${today()}.csv`; a.click(); toast(t('toast-csv'));
 };
 
 // ── SUPER ADMIN ──
@@ -836,20 +850,20 @@ window.autoSlug=function(){
 };
 window.addCompany=async function(){
   const name=val('sa-name').trim(), code=val('sa-code').trim(), pass=val('sa-pass');
-  if(!name||!code||!pass){toast('Alle Felder ausfüllen.',false);return;}
+  if(!name||!code||!pass){toast(t('err-fields'),false);return;}
   const snap=await DB.get(DB.ref(DB.db,`lager-companies/${code}`));
-  if(snap.val()){toast('Code existiert bereits.',false);return;}
+  if(snap.val()){toast(t('err-code-exists'),false);return;}
   await DB.set(DB.ref(DB.db,`lager-companies/${code}`),{name,pass,created:Date.now()});
   q('sa-name').value=''; q('sa-code').value=''; q('sa-pass').value='';
-  toast(`Firma "${name}" erstellt!`);
+  toast(t('toast-company'));
 };
 window.deleteCompany=async function(code){
-  if(!confirm('Firma löschen?')) return;
+  if(!confirm(t('confirm-company-del'))) return;
   await DB.remove(DB.ref(DB.db,`lager-companies/${code}`));
-  toast('Firma gelöscht.');
+  toast(t('toast-company-del'));
 };
 window.copyLink=function(link){
-  navigator.clipboard.writeText(link).then(()=>toast('Link kopiert!')).catch(()=>prompt('Link:',link));
+  navigator.clipboard.writeText(link).then(()=>toast(t('toast-link'))).catch(()=>prompt('Link:',link));
 };
 
 function renderSA(){
@@ -882,6 +896,426 @@ function renderSA(){
 }
 
 boot();
+</script>
+<script>
+var LANG = 'de';
+
+var T = {
+  de: {
+    'lang-btn': 'عربي',
+    'sel-title-default': 'Lagerverwaltung',
+    'sel-sub-default': 'Ein- & Ausfahrt System',
+    'sel-driver-h': 'Fahrer-Portal',
+    'sel-driver-p': 'Ein- und Ausfahrt erfassen',
+    'sel-driver-tag': 'Fahrer-Zugang',
+    'sel-admin-h': 'Admin-Dashboard',
+    'sel-admin-p': 'Alle Einträge verwalten',
+    'sel-admin-tag-default': 'Passwort erforderlich',
+    'sel-super-h': 'Super Admin',
+    'sel-super-p': 'Firmen erstellen & Links verwalten',
+    'sel-super-tag': 'Nur für den Betreiber',
+    'driver-back': '← Zurück',
+    'driver-section-info': 'Fahrerinformationen',
+    'driver-saved': '✓ Gespeichert',
+    'lbl-name': 'Fahrername *',
+    'lbl-plate': 'Kennzeichen *',
+    'lbl-car': 'Fahrzeug',
+    'driver-section-time': 'Zeiten & Datum',
+    'lbl-timein': 'Einfahrt *',
+    'lbl-timeout': 'Ausfahrt',
+    'lbl-date': 'Datum *',
+    'lbl-note': 'Bemerkung',
+    'ph-name': 'Vor- und Nachname',
+    'ph-plate': 'B-AB 1234',
+    'ph-car': 'z. B. VW Transporter',
+    'ph-note': 'Optional',
+    'driver-section-photos': 'Fotos (optional)',
+    'photo-plate-lbl': 'Kennzeichen',
+    'photo-kmin-lbl': 'KM Einfahrt',
+    'photo-kmout-lbl': 'KM Ausfahrt',
+    'photo-plate-span': 'Foto aufnehmen',
+    'photo-kmin-span': 'Tacho Einfahrt',
+    'photo-kmout-span': 'Tacho Ausfahrt',
+    'photo-status-empty': 'Keine Fotos ausgewählt (optional)',
+    'btn-submit': '✓ Einfahrt speichern',
+    'btn-reset': 'Zurücksetzen',
+    'btn-new': '+ Neuer Eintrag',
+    'succ-title': 'Eintrag gespeichert!',
+    'login-back': '← Zurück',
+    'login-lbl-pass': 'Passwort',
+    'login-ph-pass': 'Passwort',
+    'btn-login': '→ Anmelden',
+    'login-err': 'Falsches Passwort.',
+    'admin-back': 'Abmelden',
+    'btn-csv': '⬇ CSV',
+    'tab-table': '📋 Tabelle',
+    'tab-add': '+ Hinzufügen',
+    'tab-settings': '⚙ Einstellungen',
+    'f-q-ph': 'Suche Name, Kennzeichen…',
+    'f-status-all': 'Alle Status',
+    'f-status-in': 'Im Lager',
+    'f-status-out': 'Ausgefahren',
+    'f-date-all': 'Alle Tage',
+    'f-date-today': 'Heute',
+    'th-name': 'Fahrer',
+    'th-plate': 'Kennzeichen',
+    'th-car': 'Fahrzeug',
+    'th-timein': 'Einfahrt',
+    'th-timeout': 'Ausfahrt',
+    'th-date': 'Datum',
+    'th-photos': 'Fotos',
+    'th-status': 'Status',
+    'th-actions': 'Aktionen',
+    'add-title': '+ Neuen Eintrag manuell erfassen',
+    'lbl-m-name': 'Fahrername *',
+    'lbl-m-plate': 'Kennzeichen *',
+    'lbl-m-car': 'Fahrzeug',
+    'lbl-m-timein': 'Einfahrt *',
+    'lbl-m-timeout': 'Ausfahrt',
+    'lbl-m-date': 'Datum *',
+    'lbl-m-note': 'Bemerkung',
+    'btn-add': '✓ Hinzufügen',
+    'btn-clear': 'Leeren',
+    'settings-pw-title': '🔒 Passwort ändern',
+    'lbl-pw-cur': 'Aktuelles Passwort',
+    'lbl-pw-new': 'Neues Passwort',
+    'lbl-pw-conf': 'Bestätigen',
+    'ph-pw-cur': 'Aktuelles Passwort',
+    'ph-pw-new': 'Neues Passwort',
+    'ph-pw-conf': 'Wiederholen',
+    'btn-pw-save': '✓ Speichern',
+    'btn-pw-cancel': 'Abbrechen',
+    'settings-info-title': 'ℹ Informationen',
+    'inf-firma-lbl': 'Firma',
+    'inf-code-lbl': 'Code',
+    'inf-count-lbl': 'Einträge',
+    'inf-link-lbl': 'Fahrer-Link',
+    'btn-copy-link': '📋 Kopieren',
+    'settings-danger-title': '⚠ Gefahrenzone',
+    'settings-danger-desc': 'Alle Einträge dieser Firma löschen.',
+    'btn-delete-all': 'Alle Einträge löschen',
+    'sa-back': '← Zurück',
+    'sa-new-title': 'Neue Firma erstellen',
+    'lbl-sa-name': 'Firmenname *',
+    'lbl-sa-code': 'Firma-Code *',
+    'lbl-sa-pass': 'Admin-Passwort *',
+    'ph-sa-name': 'z. B. BMW Logistik',
+    'ph-sa-code': 'bmw-logistik',
+    'ph-sa-pass': 'Passwort',
+    'btn-sa-add': '+ Firma erstellen',
+    'sa-list-title': 'Firmen & Links',
+    'lb-save': '⬇ Speichern',
+    'lb-hint': 'Zwei Finger zum Zoomen',
+    'badge-in': 'Im Lager',
+    'badge-out': 'Ausgefahren',
+    'stat-total': 'Gesamt',
+    'stat-in': 'Im Lager',
+    'stat-out': 'Ausgefahren',
+    'stat-today': 'Heute',
+    'empty-text': 'Keine Einträge gefunden',
+    'sa-empty': 'Noch keine Firmen erstellt',
+    'sa-link-lbl': 'Fahrer & Admin Link',
+    'sa-pass-lbl': 'Admin Passwort',
+    'confirm-delete': 'Eintrag löschen?',
+    'confirm-delete-all1': 'ALLE Einträge löschen?',
+    'confirm-delete-all2': 'Wirklich? Kann nicht rückgängig gemacht werden!',
+    'confirm-company-del': 'Firma löschen?',
+    'edit-save': '✓ Speichern',
+    'edit-cancel': 'Abbrechen',
+    'lbl-e-name': 'Name',
+    'lbl-e-plate': 'Kennzeichen',
+    'lbl-e-car': 'Fahrzeug',
+    'lbl-e-timein': 'Einfahrt',
+    'lbl-e-timeout': 'Ausfahrt',
+    'lbl-e-note': 'Bemerkung',
+    'ph-e-note': 'Bemerkung',
+    'toast-saved': 'Eintrag gespeichert!',
+    'toast-updated': 'Gespeichert.',
+    'toast-deleted': 'Gelöscht.',
+    'toast-all-deleted': 'Alle Einträge gelöscht.',
+    'toast-csv': 'CSV heruntergeladen.',
+    'toast-link': 'Link kopiert!',
+    'toast-pw': 'Passwort geändert!',
+    'toast-company': 'Firma erstellt!',
+    'toast-company-del': 'Firma gelöscht.',
+    'toast-no-data': 'Keine Daten.',
+    'toast-fields': 'Pflichtfelder ausfüllen.',
+    'toast-error': 'Firebase Verbindungsfehler!',
+    'err-name': 'Fahrername fehlt.',
+    'err-plate': 'Kennzeichen fehlt.',
+    'err-time': 'Einfahrtzeit fehlt.',
+    'err-firma': 'Kein Firmenzugang.',
+    'err-fields': 'Alle Felder ausfüllen.',
+    'err-code-exists': 'Code existiert bereits.',
+    'pw-err-wrong': 'Aktuelles Passwort falsch.',
+    'pw-err-short': 'Mindestens 6 Zeichen.',
+    'pw-err-match': 'Passwörter stimmen nicht überein.',
+    'pw-ok': 'Passwort geändert!',
+    'saving': 'Wird gespeichert…',
+    'photo-saving': 'Foto wird hochgeladen…',
+    'lb-loading': '⏳ lädt…',
+    'lb-open': 'Direkt öffnen ↗',
+    'downloading': '⏳ Wird heruntergeladen…',
+    'dl-error': 'Direkt öffnen ↗',
+    'succ-default': 'wurde erfasst.',
+    'remove-photo': '✕ Entfernen',
+    'sa-sub': 'Alle Firmen verwalten',
+    'driver-sub': 'Einfahrt erfassen',
+    'login-default-sub': 'Passwort eingeben',
+    'login-default-firm': 'Anmeldung',
+  },
+  ar: {
+    'lang-btn': 'Deutsch',
+    'sel-title-default': 'إدارة المستودع',
+    'sel-sub-default': 'نظام الدخول والخروج',
+    'sel-driver-h': 'بوابة السائق',
+    'sel-driver-p': 'تسجيل الدخول والخروج',
+    'sel-driver-tag': 'وصول السائق',
+    'sel-admin-h': 'لوحة المدير',
+    'sel-admin-p': 'إدارة جميع السجلات',
+    'sel-admin-tag-default': 'كلمة مرور مطلوبة',
+    'sel-super-h': 'المشرف العام',
+    'sel-super-p': 'إنشاء الشركات وإدارة الروابط',
+    'sel-super-tag': 'للمشغل فقط',
+    'driver-back': 'رجوع →',
+    'driver-section-info': 'معلومات السائق',
+    'driver-saved': '✓ محفوظ',
+    'lbl-name': 'اسم السائق *',
+    'lbl-plate': 'رقم اللوحة *',
+    'lbl-car': 'نوع السيارة',
+    'driver-section-time': 'الأوقات والتاريخ',
+    'lbl-timein': 'وقت الدخول *',
+    'lbl-timeout': 'وقت الخروج',
+    'lbl-date': 'التاريخ *',
+    'lbl-note': 'ملاحظة',
+    'ph-name': 'الاسم الكامل',
+    'ph-plate': 'مثال: أ ب ج 1234',
+    'ph-car': 'مثال: تويوتا هايلوكس',
+    'ph-note': 'اختياري',
+    'driver-section-photos': 'الصور (اختياري)',
+    'photo-plate-lbl': 'لوحة السيارة',
+    'photo-kmin-lbl': 'العداد عند الدخول',
+    'photo-kmout-lbl': 'العداد عند الخروج',
+    'photo-plate-span': 'التقاط صورة',
+    'photo-kmin-span': 'عداد الدخول',
+    'photo-kmout-span': 'عداد الخروج',
+    'photo-status-empty': 'لا توجد صور (اختياري)',
+    'btn-submit': '✓ حفظ الدخول',
+    'btn-reset': 'إعادة تعيين',
+    'btn-new': '+ إدخال جديد',
+    'succ-title': 'تم حفظ السجل!',
+    'login-back': 'رجوع →',
+    'login-lbl-pass': 'كلمة المرور',
+    'login-ph-pass': 'كلمة المرور',
+    'btn-login': '→ تسجيل الدخول',
+    'login-err': 'كلمة مرور خاطئة.',
+    'admin-back': 'تسجيل الخروج',
+    'btn-csv': '⬇ تصدير CSV',
+    'tab-table': '📋 الجدول',
+    'tab-add': '+ إضافة',
+    'tab-settings': '⚙ الإعدادات',
+    'f-q-ph': 'بحث بالاسم أو اللوحة…',
+    'f-status-all': 'جميع الحالات',
+    'f-status-in': 'في المستودع',
+    'f-status-out': 'خرج',
+    'f-date-all': 'جميع الأيام',
+    'f-date-today': 'اليوم',
+    'th-name': 'السائق',
+    'th-plate': 'اللوحة',
+    'th-car': 'السيارة',
+    'th-timein': 'وقت الدخول',
+    'th-timeout': 'وقت الخروج',
+    'th-date': 'التاريخ',
+    'th-photos': 'الصور',
+    'th-status': 'الحالة',
+    'th-actions': 'الإجراءات',
+    'add-title': '+ إضافة سجل يدوياً',
+    'lbl-m-name': 'اسم السائق *',
+    'lbl-m-plate': 'رقم اللوحة *',
+    'lbl-m-car': 'نوع السيارة',
+    'lbl-m-timein': 'وقت الدخول *',
+    'lbl-m-timeout': 'وقت الخروج',
+    'lbl-m-date': 'التاريخ *',
+    'lbl-m-note': 'ملاحظة',
+    'btn-add': '✓ إضافة',
+    'btn-clear': 'مسح',
+    'settings-pw-title': '🔒 تغيير كلمة المرور',
+    'lbl-pw-cur': 'كلمة المرور الحالية',
+    'lbl-pw-new': 'كلمة المرور الجديدة',
+    'lbl-pw-conf': 'تأكيد كلمة المرور',
+    'ph-pw-cur': 'كلمة المرور الحالية',
+    'ph-pw-new': 'كلمة المرور الجديدة',
+    'ph-pw-conf': 'أعد الكتابة',
+    'btn-pw-save': '✓ حفظ',
+    'btn-pw-cancel': 'إلغاء',
+    'settings-info-title': 'ℹ المعلومات',
+    'inf-firma-lbl': 'الشركة',
+    'inf-code-lbl': 'الرمز',
+    'inf-count-lbl': 'السجلات',
+    'inf-link-lbl': 'رابط السائق',
+    'btn-copy-link': '📋 نسخ',
+    'settings-danger-title': '⚠ منطقة خطر',
+    'settings-danger-desc': 'حذف جميع سجلات هذه الشركة.',
+    'btn-delete-all': 'حذف جميع السجلات',
+    'sa-back': 'رجوع →',
+    'sa-new-title': 'إنشاء شركة جديدة',
+    'lbl-sa-name': 'اسم الشركة *',
+    'lbl-sa-code': 'رمز الشركة *',
+    'lbl-sa-pass': 'كلمة مرور المدير *',
+    'ph-sa-name': 'مثال: شركة الخليج',
+    'ph-sa-code': 'al-khaleej',
+    'ph-sa-pass': 'كلمة المرور',
+    'btn-sa-add': '+ إنشاء شركة',
+    'sa-list-title': 'الشركات والروابط',
+    'lb-save': '⬇ حفظ',
+    'lb-hint': 'إصبعان للتكبير',
+    'badge-in': 'في المستودع',
+    'badge-out': 'خرج',
+    'stat-total': 'المجموع',
+    'stat-in': 'في المستودع',
+    'stat-out': 'خرج',
+    'stat-today': 'اليوم',
+    'empty-text': 'لا توجد سجلات',
+    'sa-empty': 'لا توجد شركات بعد',
+    'sa-link-lbl': 'رابط السائق والمدير',
+    'sa-pass-lbl': 'كلمة مرور المدير',
+    'confirm-delete': 'حذف السجل؟',
+    'confirm-delete-all1': 'حذف جميع السجلات؟',
+    'confirm-delete-all2': 'هل أنت متأكد؟ لا يمكن التراجع!',
+    'confirm-company-del': 'حذف الشركة؟',
+    'edit-save': '✓ حفظ',
+    'edit-cancel': 'إلغاء',
+    'lbl-e-name': 'الاسم',
+    'lbl-e-plate': 'اللوحة',
+    'lbl-e-car': 'السيارة',
+    'lbl-e-timein': 'وقت الدخول',
+    'lbl-e-timeout': 'وقت الخروج',
+    'lbl-e-note': 'ملاحظة',
+    'ph-e-note': 'ملاحظة',
+    'toast-saved': 'تم حفظ السجل!',
+    'toast-updated': 'تم الحفظ.',
+    'toast-deleted': 'تم الحذف.',
+    'toast-all-deleted': 'تم حذف جميع السجلات.',
+    'toast-csv': 'تم تنزيل CSV.',
+    'toast-link': 'تم نسخ الرابط!',
+    'toast-pw': 'تم تغيير كلمة المرور!',
+    'toast-company': 'تم إنشاء الشركة!',
+    'toast-company-del': 'تم حذف الشركة.',
+    'toast-no-data': 'لا توجد بيانات.',
+    'toast-fields': 'يرجى ملء الحقول المطلوبة.',
+    'toast-error': 'خطأ في الاتصال بـ Firebase!',
+    'err-name': 'اسم السائق مطلوب.',
+    'err-plate': 'رقم اللوحة مطلوب.',
+    'err-time': 'وقت الدخول مطلوب.',
+    'err-firma': 'لا يوجد وصول للشركة.',
+    'err-fields': 'يرجى ملء جميع الحقول.',
+    'err-code-exists': 'الرمز موجود مسبقاً.',
+    'pw-err-wrong': 'كلمة المرور الحالية خاطئة.',
+    'pw-err-short': '6 أحرف على الأقل.',
+    'pw-err-match': 'كلمتا المرور غير متطابقتين.',
+    'pw-ok': 'تم تغيير كلمة المرور!',
+    'saving': 'جارٍ الحفظ…',
+    'photo-saving': 'جارٍ رفع الصورة…',
+    'lb-loading': '⏳ جارٍ التحميل…',
+    'lb-open': 'فتح مباشرة ↗',
+    'downloading': '⏳ جارٍ التنزيل…',
+    'dl-error': 'فتح مباشرة ↗',
+    'succ-default': 'تم تسجيله.',
+    'remove-photo': '✕ إزالة',
+    'sa-sub': 'إدارة جميع الشركات',
+    'driver-sub': 'تسجيل الدخول',
+    'login-default-sub': 'أدخل كلمة المرور',
+    'login-default-firm': 'تسجيل الدخول',
+  }
+};
+
+// Elements to translate: [id, property, key]
+var TRANS_MAP = [
+  // Lang button
+  ['lang-btn','textContent','lang-btn'],
+  // Select page (only if no firma set — handled in JS)
+  ['sel-admin-tag','textContent','sel-admin-tag-default'],
+  // Driver topbar
+  ['d-firma-label','textContent','driver-sub'],
+  // Login
+  ['login-title','textContent','login-default-firm'],
+  ['login-sub','textContent','login-default-sub'],
+  ['login-firm','textContent','login-default-firm'],
+  ['login-err','textContent','login-err'],
+  // Lightbox
+  ['lb-hint','textContent','lb-hint'],
+  // Table headers
+  ['th-name-el','textContent','th-name'],
+  ['th-plate-el','textContent','th-plate'],
+  ['th-car-el','textContent','th-car'],
+  ['th-timein-el','textContent','th-timein'],
+  ['th-timeout-el','textContent','th-timeout'],
+  ['th-date-el','textContent','th-date'],
+  ['th-photos-el','textContent','th-photos'],
+  ['th-status-el','textContent','th-status'],
+  ['th-actions-el','textContent','th-actions'],
+  // Filter placeholders
+  ['f-q','placeholder','f-q-ph'],
+  // Buttons
+  ['btn-submit-de','textContent','btn-submit'],
+  ['btn-reset-de','textContent','btn-reset'],
+  ['d-submit-btn','textContent','btn-submit'],
+];
+
+function t(key){ return (T[LANG]||T.de)[key] || key; }
+window.t = t;
+
+function applyLang(){
+  var isAr = LANG === 'ar';
+  document.documentElement.setAttribute('lang', isAr ? 'ar' : 'de');
+  document.documentElement.setAttribute('dir', isAr ? 'rtl' : 'ltr');
+
+  // Update all static text
+  TRANS_MAP.forEach(function(item){
+    var el = document.getElementById(item[0]);
+    if(el) el[item[1]] = t(item[2]);
+  });
+
+  // Translate form labels by data-key
+  document.querySelectorAll('[data-i18n]').forEach(function(el){
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+
+  // Translate placeholders
+  document.querySelectorAll('[data-i18n-ph]').forEach(function(el){
+    el.placeholder = t(el.getAttribute('data-i18n-ph'));
+  });
+
+  // Translate select options
+  var fStatus = document.getElementById('f-status');
+  if(fStatus){
+    fStatus.options[0].text = t('f-status-all');
+    fStatus.options[1].text = t('f-status-in');
+    fStatus.options[2].text = t('f-status-out');
+  }
+  var fDate = document.getElementById('f-date');
+  if(fDate){
+    fDate.options[0].text = t('f-date-all');
+    fDate.options[1].text = t('f-date-today');
+  }
+
+  // Re-render table to update badges/status text
+  if(typeof renderTable === 'function') try{ renderTable(); }catch(e){}
+  if(typeof updateStats === 'function') try{ updateStats(); }catch(e){}
+
+  // Store preference
+  localStorage.setItem('lager_lang', LANG);
+}
+
+function toggleLang(){
+  LANG = LANG === 'de' ? 'ar' : 'de';
+  applyLang();
+}
+window.toggleLang = toggleLang;
+
+// Load saved language
+LANG = localStorage.getItem('lager_lang') || 'de';
+document.addEventListener('DOMContentLoaded', function(){ applyLang(); });
 </script>
 </body>
 </html>
